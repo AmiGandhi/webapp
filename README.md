@@ -1,10 +1,10 @@
 # webapp
 
 ## Technology Stack
-Java 1.8
-Spring Boot 2.2.4
-PostgresSQL 
-JUnit 4.12
+1. Java 1.8
+2. Spring Boot 2.2.4
+3. PostgresSQL 
+4. JUnit 4.12
 
 ## Build Instructions
 1. Build the project using Maven
