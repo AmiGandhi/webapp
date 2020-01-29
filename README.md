@@ -4,7 +4,7 @@
 1. Java 1.8
 2. Spring Boot 2.2.4
 3. PostgresSQL 
-4. JUnit 4.12
+4. JUnit 4.12 
 
 ## Build Instructions
 1. Build the project using Maven
@@ -17,6 +17,6 @@
 Application is deployed locally and runs on http://localhost:8080/
 
 ## Running Tests
-The unit tests can be found under the test package. The unit tests are developedusing Junit 4.12
+The unit tests can be found under the test package. The unit tests are developed using Junit 4.12
 
 Install Postman - Demo of all the API implementation on Postman
