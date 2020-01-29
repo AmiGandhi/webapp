@@ -7,6 +7,11 @@ public class ApplicationConstants {
     public static final String REGISTER = "/v1/user";
     public static final String AUTHORIZATION = "Authorization";
     public static final String BASIC = "Basic";
+    public static final String CREATE_BILL = "/v1/bill/";
+    public static final String GET_ALL_BILLS = "/v1/bills";
+    public static final String GET_BILL = "/v1/bill/{id}";
+    public static final String UPDATE_BILL = "/v1/bill/{id}";
+    public static final String DELETE_BILL = "/v1/bill/{id}";
 
     // Username and Password Validation exceptions
     // =========================================================================================================================
