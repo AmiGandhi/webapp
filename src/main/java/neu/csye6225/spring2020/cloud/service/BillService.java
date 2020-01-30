@@ -4,16 +4,17 @@ import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
 import neu.csye6225.spring2020.cloud.exception.ValidationException;
 import neu.csye6225.spring2020.cloud.model.Bill;
+import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
 
 public interface BillService {
 
     Bill createBill(String authHeader, Bill bill)
-            throws ValidationException;
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException;
 
     Bill getAllBills(String authHeader)
-            throws UnAuthorizedLoginException, ResourceNotFoundException;
+            throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException;
 
     Bill getBill(String authHeader, UUID bill_id)
             throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException;
@@ -21,7 +22,7 @@ public interface BillService {
     Bill updateBill(String authHeader, UUID bill_id, Bill bill)
             throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException;
 
-    Bill deleteBill(String authHeader, UUID bill_id)
+    ResponseEntity deleteBill(String authHeader, UUID bill_id)
             throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException;
 
 }

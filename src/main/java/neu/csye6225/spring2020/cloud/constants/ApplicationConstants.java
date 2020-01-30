@@ -21,6 +21,7 @@ public class ApplicationConstants {
     public static final String PASSWORD_INCORRECT = "Incorrect password entered. Password must contain an uppercase character, a lowercase character, a digit, a special character with min length of 8";
     public static final String MANDATORY_FIELDS_MISSING = "Please enter all mandatory fields. email_address, first_name, last_name and password are mandatory!";
     public static final String INVALID_CREDENTIALS = "Invalid credentials!";
+    public static final String EMAILID_PASSWORD_MISSING = "Email Id and password missing!";
     public static final String EMAILID_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
     public static final String PASSWORD_REGEX = "((?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&*!]).{6,15})";
 

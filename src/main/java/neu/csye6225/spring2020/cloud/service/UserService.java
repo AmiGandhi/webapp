@@ -10,9 +10,7 @@ public interface UserService {
 
     User createUser(User user) throws ValidationException;
 
-    User getUser(String authHeader) throws UnAuthorizedLoginException, ResourceNotFoundException;
-
-    User findByEmail_address(String email_address);
+    User getUser(String authHeader) throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException;
 
     ResponseEntity updateUser(String authHeader, User user) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException;
 

@@ -41,7 +41,7 @@ public class EntryController {
     @RequestMapping(method = RequestMethod.GET, value = LOGIN, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<User> getUser(@RequestHeader(AUTHORIZATION) String header)
-            throws UnAuthorizedLoginException, ResourceNotFoundException {
+            throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
         return new ResponseEntity<User>(userService.getUser(header), HttpStatus.OK);
     }
 
@@ -59,7 +59,7 @@ public class EntryController {
     @ResponseBody
     public ResponseEntity<Bill> createBill(@RequestHeader(AUTHORIZATION) String header,
                                            @Valid @RequestBody Bill bill)
-            throws ValidationException {
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException {
         return new ResponseEntity<Bill>(billService.createBill(header, bill), HttpStatus.CREATED);
     }
 
@@ -67,14 +67,14 @@ public class EntryController {
     @RequestMapping(method = RequestMethod.GET, value = GET_ALL_BILLS, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Bill> getAllBills(@RequestHeader(AUTHORIZATION) String header)
-            throws UnAuthorizedLoginException, ResourceNotFoundException {
+            throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
         return new ResponseEntity<Bill>(billService.getAllBills(header), HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.GET, value = GET_BILL, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Bill> getBill(@RequestHeader(AUTHORIZATION) String header,
-                                        @PathVariable(value = "id") UUID id)
+                                        @PathVariable(value = "bill_id") UUID id)
             throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
         return new ResponseEntity<Bill>(billService.getBill(header, id), HttpStatus.OK);
     }
@@ -83,7 +83,7 @@ public class EntryController {
     @RequestMapping(method = RequestMethod.PUT, value = UPDATE_BILL, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Bill> updateBill(@RequestHeader(AUTHORIZATION) String header,
-                                           @PathVariable(value = "id") UUID id,
+                                           @PathVariable(value = "bill_id") UUID id,
                                            @RequestBody Bill bill)
             throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
         return new ResponseEntity<Bill>(billService.updateBill(header, id, bill), HttpStatus.OK);
@@ -93,7 +93,7 @@ public class EntryController {
     @RequestMapping(method = RequestMethod.DELETE, value = DELETE_BILL, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity deleteBill(@RequestHeader(AUTHORIZATION) String header,
-                                     @PathVariable(value = "id") UUID id)
+                                     @PathVariable(value = "bill_id") UUID id)
             throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
         return new ResponseEntity(billService.deleteBill(header, id), HttpStatus.NO_CONTENT);
     }

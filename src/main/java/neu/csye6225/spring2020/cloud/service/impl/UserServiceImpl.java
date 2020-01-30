@@ -13,7 +13,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +24,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserRepository userRepo ;
+
+    @Autowired
+    private AuthServiceImpl authServiceImpl;
 
     @Override
     public User createUser(User userBody) throws ValidationException {
@@ -49,7 +51,7 @@ public class UserServiceImpl implements UserService {
         }
 
         String email_address = userBody.getEmailAddress();
-        User checkUserExists = findByEmail_address(email_address);
+        User checkUserExists = authServiceImpl.findByEmail_address(email_address);
         if(checkUserExists==null)
         {
             BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -63,9 +65,9 @@ public class UserServiceImpl implements UserService {
         return userBody;
     }
 
-    public User getUser(String authHeader) throws UnAuthorizedLoginException, ResourceNotFoundException {
+    public User getUser(String authHeader) throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
 
-        ResponseEntity responseBody = checkIfUserExists(authHeader);
+        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
         if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
         {
             User u = (User) responseBody.getBody();
@@ -74,34 +76,9 @@ public class UserServiceImpl implements UserService {
         throw new ResourceNotFoundException(INVALID_CREDENTIALS);
     }
 
-    public ResponseEntity checkIfUserExists(String header) throws UnAuthorizedLoginException {
-
-        if(header!=null && header.contains(BASIC))
-        {
-            String [] userInfo = new String(Base64.getDecoder().decode(header.substring(6).getBytes())).split(":", 2);
-            User user = findByEmail_address(userInfo[0]);
-
-            if(user == null)
-            {
-                throw new UnAuthorizedLoginException(NULL_EMAIL);
-            } else
-            {
-                if(new BCryptPasswordEncoder().matches(userInfo[1], user.getPassword()))
-                {
-                    return new ResponseEntity(user, HttpStatus.NO_CONTENT);
-                } else
-                {
-                    throw new UnAuthorizedLoginException(PASSWORD_INCORRECT);
-                }
-            }
-
-        }
-        return new ResponseEntity(HttpStatus.NO_CONTENT);
-    }
-
     public ResponseEntity updateUser(String authHeader, User user) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
 
-        ResponseEntity responseBody = checkIfUserExists(authHeader);
+        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
         User u = (User) responseBody.getBody();
         if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
         {
@@ -139,16 +116,12 @@ public class UserServiceImpl implements UserService {
                         return userRepo.save(u1);
                     })
                     .orElseThrow(()-> new ResourceNotFoundException("User not found with email"+ u.getEmailAddress()));
+        } else {
+            throw new ResourceNotFoundException(INVALID_CREDENTIALS);
         }
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 
-    @Override
-    public User findByEmail_address(String email_address) {
-        // TODO Auto-generated method stub
-        User user = userRepo.findByEmailAddress(email_address);
 
-        return user;
-    }
 
 }
