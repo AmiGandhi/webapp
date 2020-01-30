@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty.Access;
 @EntityListeners(AuditingEntityListener.class)
 public class User   {
 
-    @JsonProperty(access=Access.READ_ONLY)
+    //@JsonProperty(access=Access.READ_ONLY)
     @Id
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator", parameters = {
