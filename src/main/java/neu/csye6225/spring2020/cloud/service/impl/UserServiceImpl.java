@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException(MANDATORY_FIELDS_MISSING);
         }
 
-        Pattern ptrn =    Pattern.compile(PASSWORD_REGEX);
+        Pattern ptrn = Pattern.compile(PASSWORD_REGEX);
         Matcher mtch = ptrn.matcher(userBody.getPassword());
         if(!mtch.matches())
         {
