@@ -6,14 +6,16 @@ import neu.csye6225.spring2020.cloud.exception.ValidationException;
 import neu.csye6225.spring2020.cloud.model.Bill;
 import org.springframework.http.ResponseEntity;
 
+import javax.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 
 public interface BillService {
 
-    Bill createBill(String authHeader, Bill bill)
+    Bill createBill(String authHeader, @Valid Bill bill)
             throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException;
 
-    Bill getAllBills(String authHeader)
+    List<Bill> getAllBills(String authHeader)
             throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException;
 
     Bill getBill(String authHeader, UUID bill_id)

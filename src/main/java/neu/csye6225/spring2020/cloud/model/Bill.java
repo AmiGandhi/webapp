@@ -1,104 +1,97 @@
 package neu.csye6225.spring2020.cloud.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.*;
+import neu.csye6225.spring2020.cloud.service.EnumNamePattern;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.validator.constraints.UniqueElements;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import javax.validation.constraints.DecimalMin;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import java.util.*;
 
 @Entity
 @Table(name = "bill_data")
 @EntityListeners(AuditingEntityListener.class)
-@JsonIgnoreProperties(value = {"created_ts", "updated_ts"},
-        allowGetters = true)
-@JsonPropertyOrder({ "bill_id", "created_ts", "updated_ts", "owner_id", "vendor", "bill_date", "due_date", "amount_due", "categories", "paymentStatus"})
 public class Bill {
 
-    @JsonProperty(value="bill_id",access= JsonProperty.Access.READ_ONLY)
+    @JsonProperty(value="bill_id")
     @Id
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator", parameters = {
             @org.hibernate.annotations.Parameter(name = "uuid_gen_strategy_class", value = "org.hibernate.id.uuid.StandardRandomStrategy") })
     @Column(name = "bill_id")
-    UUID billId;
+    private UUID id;
 
     @JsonProperty(value= "created_ts",access= JsonProperty.Access.READ_ONLY)
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss.SSS'z'", timezone="America/New_York")
     @Temporal(TemporalType.TIMESTAMP)
     @CreatedDate
     @Column(name = "created_ts")
     Date createdAt;
 
     @JsonProperty(value="updated_ts", access= JsonProperty.Access.READ_ONLY)
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss.SSS'z'", timezone="America/New_York")
     @Temporal(TemporalType.TIMESTAMP)
     @LastModifiedDate
     @Column(name = "updated_ts")
     Date updatedAt;
 
-    @JsonProperty(value="owner_id", access= JsonProperty.Access.READ_ONLY)
-    @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator", parameters = {
-            @org.hibernate.annotations.Parameter(name = "uuid_gen_strategy_class", value = "org.hibernate.id.uuid.StandardRandomStrategy") })
-    @Column(name = "owner_id")
-    UUID ownerId;
-
+    @NotNull(message="vendor field is mandatory")
     @JsonProperty(value="vendor")
     String vendor;
 
     @JsonProperty(value="bill_date")
-    @Temporal(TemporalType.DATE)
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd")
+    @NotNull(message="bill_date is mandatory")
     @Column(name = "bill_date")
     Date billDate;
 
     @JsonProperty(value="due_date")
-    @Temporal(TemporalType.DATE)
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd")
+    @NotNull(message="due_date is mandatory")
     @Column(name = "due_date")
     Date dueDate;
 
     @JsonProperty(value="amount_due")
     @DecimalMin("0.01")
+    @NotNull(message="amount_due is mandatory")
     @Column(name = "amount_due")
     Double amountDue;
 
     @JsonProperty(value="categories")
     //@UniqueElements
     //@Column(unique = true)
+    @Size(min=1, message="Atleast 1 category is mandatory!")
     @ElementCollection
-    @CollectionTable(name="categories")
-    Set<String> categories;
+    private Set <String> categories = new HashSet<String>() ;
 
     @JsonProperty(value="paymentStatus")
+    @EnumNamePattern(regexp = "paid|due|past_due|no_payment_required", message="Value has to be either paid, due, past_due, no_payment_required")
+    @NotNull(message="paymentStatus is mandatory")
     @Enumerated(EnumType.STRING)
     PaymentStatusType paymentStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "email_address", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    @JsonIgnore
+    @OneToOne
+    @JoinColumn(name = "owner_id")
+    @JsonIdentityInfo(generator=ObjectIdGenerators.PropertyGenerator.class, property="id")
+    @JsonIdentityReference(alwaysAsId=true)
+    @JsonProperty("owner_id")
     private User user;
 
     // getters and setters
 
 
-    public UUID getBillId() {
-        return billId;
+    public UUID getId() {
+        return id;
     }
 
-    public void setBillId(UUID billId) {
-        this.billId = billId;
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     public Date getCreatedAt() {
@@ -115,14 +108,6 @@ public class Bill {
 
     public void setUpdatedAt(Date updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public UUID getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(UUID ownerId) {
-        this.ownerId = ownerId;
     }
 
     public String getVendor() {

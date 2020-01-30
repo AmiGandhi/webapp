@@ -12,11 +12,12 @@ public class ValidationServiceImpl implements ValidationService {
     @Override
     public void isBillValid(Bill bill) throws ValidationException {
 
-        if(bill.getBillId()== null|| bill.getOwnerId()==null|| bill.getVendor()==null||
+        if(bill.getVendor()==null||
                 bill.getAmountDue() ==null || bill.getBillDate()==null || bill.getDueDate()==null ||
                 bill.getCategories()==null || bill.getPaymentStatus() == null)
         {
             throw new ValidationException(MANDATORY_FIELDS_MISSING);
         }
+
     }
 }

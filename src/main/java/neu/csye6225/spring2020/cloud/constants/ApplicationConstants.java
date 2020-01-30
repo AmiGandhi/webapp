@@ -7,11 +7,11 @@ public class ApplicationConstants {
     public static final String REGISTER = "/v1/user";
     public static final String AUTHORIZATION = "Authorization";
     public static final String BASIC = "Basic";
-    public static final String CREATE_BILL = "/v1/bill/";
+    public static final String CREATE_BILL = "/v1/bill";
     public static final String GET_ALL_BILLS = "/v1/bills";
-    public static final String GET_BILL = "/v1/bill/{id}";
-    public static final String UPDATE_BILL = "/v1/bill/{id}";
-    public static final String DELETE_BILL = "/v1/bill/{id}";
+    public static final String GET_BILL = "/v1/bill/{bill_id}";
+    public static final String UPDATE_BILL = "/v1/bill/{bill_id}";
+    public static final String DELETE_BILL = "/v1/bill/{bill_id}";
 
     // Username and Password Validation exceptions
     // =========================================================================================================================
@@ -19,7 +19,7 @@ public class ApplicationConstants {
     public static final String INVALID_EMAIL = "Kindly enter valid email id.";
     public static final String EXISTING_EMAIL = "Email Id already exists!";
     public static final String PASSWORD_INCORRECT = "Incorrect password entered. Password must contain an uppercase character, a lowercase character, a digit, a special character with min length of 8";
-    public static final String MANDATORY_FIELDS_MISSING = "Please enter all mandatory fields. email_address, first_name, last_name and password are mandatory!";
+    public static final String MANDATORY_FIELDS_MISSING = "Please enter all mandatory fields!";
     public static final String INVALID_CREDENTIALS = "Invalid credentials!";
     public static final String EMAILID_PASSWORD_MISSING = "Email Id and password missing!";
     public static final String EMAILID_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";

@@ -4,17 +4,18 @@ import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
 import neu.csye6225.spring2020.cloud.exception.ValidationException;
 import neu.csye6225.spring2020.cloud.model.Bill;
+import neu.csye6225.spring2020.cloud.model.PaymentStatusType;
 import neu.csye6225.spring2020.cloud.model.User;
 import neu.csye6225.spring2020.cloud.repository.BillRepository;
 import neu.csye6225.spring2020.cloud.service.BillService;
 import neu.csye6225.spring2020.cloud.service.ValidationService;
-import neu.csye6225.spring2020.cloud.util.AuthServiceUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,38 +33,37 @@ public class BillServiceImpl implements BillService {
     @Autowired
     private ValidationService validationService;
 
-    @Autowired
-    private AuthServiceUtil authServiceUtil;
-
     @Override
-    public Bill createBill(String authHeader, Bill bill) throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException {
+    public Bill createBill(String authHeader, Bill bill) throws ValidationException, UnAuthorizedLoginException {
 
         ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
-        User u = (User) responseBody.getBody();
         if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
         {
+            User u = (User) responseBody.getBody();
             validationService.isBillValid(bill);
             bill.setUser(u);
+            PaymentStatusType pay =  bill.getPaymentStatus();
+            bill.setPaymentStatus(pay);
             Bill savedBill = billRepo.save(bill);
             return savedBill;
 
         } else {
-            throw new ResourceNotFoundException(INVALID_CREDENTIALS);
+            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
         }
     }
 
     @Override
-    public Bill getAllBills(String authHeader) throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
+    public List<Bill> getAllBills(String authHeader) throws UnAuthorizedLoginException, ValidationException {
 
         ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
         User u = (User) responseBody.getBody();
         if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
         {
-            Bill bill = billRepo.getAllBillsForUser(u);
-            return bill;
+            List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
+            return bill_list;
 
         } else {
-            throw new ResourceNotFoundException(INVALID_CREDENTIALS);
+            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
         }
     }
 
@@ -71,15 +71,18 @@ public class BillServiceImpl implements BillService {
     public Bill getBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
 
         ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
-        User u = (User) responseBody.getBody();
         if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
         {
+            User u = (User) responseBody.getBody();
             Optional<Bill> billWrapper = billRepo.findById(bill_id);
-            if (!billWrapper.isPresent() || billWrapper.get() == null) {
+            Bill b = billRepo.findBillById(u.getId(), bill_id);
+            if (!billWrapper.isPresent() || b == null) {
                 throw new ResourceNotFoundException("Bill with ID: " + bill_id.toString() + " does not exist");
             }
-            Bill bill = billWrapper.get();
-            return bill;
+            if (billWrapper.isPresent() && b==null) {
+                throw new UnAuthorizedLoginException("Unauthorized to access the bill!");
+            }
+            return b;
 
         } else {
             throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
@@ -89,28 +92,39 @@ public class BillServiceImpl implements BillService {
 
     @Override
     public Bill updateBill(String authHeader, UUID bill_id, Bill bill) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
-        validationService.isBillValid(bill);
-        Bill fetchedBill;
-        fetchedBill = getBill(authHeader, bill_id);
-        fetchedBill.setBillId(bill.getBillId());
-        fetchedBill.setOwnerId(bill.getOwnerId());
-        fetchedBill.setVendor(bill.getVendor());
-        fetchedBill.setBillDate(bill.getBillDate());
-        fetchedBill.setDueDate(bill.getDueDate());
-        fetchedBill.setAmountDue(bill.getAmountDue());
-        fetchedBill.setCategories(bill.getCategories());
-        fetchedBill.setPaymentStatus(bill.getPaymentStatus());
 
-        billRepo.save(fetchedBill);
-        return fetchedBill;
+        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
+        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
+        {
+            validationService.isBillValid(bill);
+            Optional<Bill> billWrapper = billRepo.findById(bill_id);
+
+            if (!billWrapper.isPresent()) {
+                throw new ResourceNotFoundException("Bill with ID: " + bill_id.toString() + " does not exist");
+            }
+            if (billWrapper.isPresent() && billWrapper.get().getUser()!=responseBody.getBody()) {
+                throw new UnAuthorizedLoginException("Unauthorized to access the bill!");
+            }
+            Bill savedBill=billWrapper.get();
+            savedBill.setAmountDue(bill.getAmountDue());
+            savedBill.setBillDate(bill.getBillDate());
+            savedBill.setCategories(bill.getCategories());
+            savedBill.setDueDate(bill.getDueDate());
+            savedBill.setPaymentStatus(bill.getPaymentStatus());
+            savedBill.setVendor(bill.getVendor());
+            billRepo.save(savedBill);
+            return savedBill;
+
+        } else {
+            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+        }
 
     }
 
     @Override
     public ResponseEntity deleteBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
 
-        Bill fetchedBill;
-        fetchedBill = getBill(authHeader, bill_id);
+        Bill fetchedBill = getBill(authHeader, bill_id);
         billRepo.delete(fetchedBill);
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }

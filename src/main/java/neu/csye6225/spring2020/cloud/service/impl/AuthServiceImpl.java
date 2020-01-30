@@ -34,7 +34,7 @@ public class AuthServiceImpl implements AuthService {
 
             if(user == null)
             {
-                throw new UnAuthorizedLoginException(NULL_EMAIL);
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
             } else
             {
                 if(new BCryptPasswordEncoder().matches(userPassArr[1], user.getPassword()))
