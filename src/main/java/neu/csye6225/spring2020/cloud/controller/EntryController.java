@@ -31,6 +31,9 @@ public class EntryController {
     @Autowired
     private BillService billService;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
     @RequestMapping( method = RequestMethod.POST, value=REGISTER, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<User> createUser(@Valid @RequestBody User userBody)

@@ -83,6 +83,10 @@ public class Bill {
     @JsonProperty("owner_id")
     private User user;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bill")
+    @JsonProperty("attachments")
+    private List<File> attachments;
+
     // getters and setters
 
 
@@ -164,5 +168,13 @@ public class Bill {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public List<File> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<File> attachments) {
+        this.attachments = attachments;
     }
 }
