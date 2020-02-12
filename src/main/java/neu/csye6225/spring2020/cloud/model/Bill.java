@@ -1,6 +1,7 @@
 package neu.csye6225.spring2020.cloud.model;
 
 import com.fasterxml.jackson.annotation.*;
+
 import neu.csye6225.spring2020.cloud.service.EnumNamePattern;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -85,9 +86,11 @@ public class Bill {
     @JsonProperty("owner_id")
     private User user;
 
-    @OneToOne(fetch = FetchType.LAZY, mappedBy = "bill", cascade = CascadeType.REMOVE)
+
+    @OneToOne(cascade = CascadeType.REMOVE)
     @NotFound(action = NotFoundAction.IGNORE)
-    @JoinColumn(name = "file_id", nullable = false)
+    @JoinColumn(name = "file_id")
+    //@JsonIgnore
     //@JsonProperty("attachments")
     private File attachment;
 

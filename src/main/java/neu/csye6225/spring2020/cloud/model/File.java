@@ -20,9 +20,8 @@ public class File {
     public File() {
     }
 
-    public File(@NotNull String url, Bill bill) {
+    public File(String url) {
         this.url = url;
-        this.bill = bill;
     }
 
     @JsonIgnore
@@ -50,10 +49,10 @@ public class File {
     @LastModifiedDate
     Date upload_date;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bill_id", nullable = false)
-    @JsonIgnore
-    private Bill bill;
+//    @OneToOne
+//    @JoinColumn(name = "bill_id")
+//    @JsonIgnore
+//    private Bill bill;
 
 
     // getter and setter
@@ -107,11 +106,11 @@ public class File {
         this.upload_date = upload_date;
     }
 
-    public Bill getBill() {
+   /* public Bill getBill() {
         return bill;
     }
 
     public void setBill(Bill bill) {
         this.bill = bill;
-    }
+    }*/
 }

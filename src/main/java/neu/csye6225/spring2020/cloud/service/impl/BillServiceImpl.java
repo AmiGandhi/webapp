@@ -16,6 +16,7 @@ import neu.csye6225.spring2020.cloud.service.ValidationService;
 import neu.csye6225.spring2020.cloud.util.CommonUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -67,6 +68,7 @@ public class BillServiceImpl implements BillService {
             bill.setUser(u);
             PaymentStatusType pay =  bill.getPaymentStatus();
             bill.setPaymentStatus(pay);
+            //bill.setAttachment(null);
             Bill savedBill = billRepo.save(bill);
             return savedBill;
 
@@ -162,16 +164,23 @@ public class BillServiceImpl implements BillService {
         if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
             try {
                 Bill fetchedBill = getBill(auth, bill_id);
-                if (fetchedBill.getAttachment() == null) {
-                    String fileLocation = fileStorageService.storeFile(file);
-                    File f = new File(fileLocation, fetchedBill);
-                    f.setSize(Long.toString(file.getSize()));
-                    f.setMd5(computeMD5Hash(file.getBytes()));
-                    f.setFile_name(commonUtil.getFileNameFromPath(fileLocation));
-                    return fileRepository.save(f);
+                if (fetchedBill != null) {
+                    if (fetchedBill.getAttachment() == null) {
+                        String fileLocation = fileStorageService.storeFile(file);
+                        File f = new File(fileLocation);
+                        f.setSize(Long.toString(file.getSize()));
+                        f.setMd5(computeMD5Hash(file.getBytes()));
+                        f.setFile_name(commonUtil.getFileNameFromPath(fileLocation));
+
+                        fetchedBill.setAttachment(f);
+                        return fileRepository.save(f);
+                    } else {
+                        throw new ValidationException("Cannot attach the file!");
+                    }
                 } else {
-                    throw new ValidationException("Cannot attach the file!");
+                    throw new ValidationException("Cannot find the bill!");
                 }
+
 
             } catch (Exception e) {
                 logger.error(commonUtil.stackTraceString(e));
@@ -191,12 +200,19 @@ public class BillServiceImpl implements BillService {
             try {
                 Bill fetchedBill = getBill(auth, bill_id);
                 if (fetchedBill != null) {
-                    if (fetchedBill.getAttachment().getId().equals(file_id)) {
-                        return fetchedBill.getAttachment();
+                    Optional <File> fileObj = fileRepository.findById(file_id);
+                    if (fileObj.isPresent()) {
+                        File file = fileObj.get();
+                        File dbfile = fetchedBill.getAttachment();
+                        if (dbfile != null && dbfile.equals(file)) {
+                            return file;
+                        } else {
+                            throw new ValidationException("Invalid File id!");
+                        }
                     } else {
-                        throw new ResourceNotFoundException("File Id not found with id: " + file_id);
-                    }
-                } else {
+                            throw new ValidationException("Invalid File id!");
+                        }
+                    } else {
                     throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
                 }
 
@@ -218,9 +234,19 @@ public class BillServiceImpl implements BillService {
             try {
                 Bill fetchedBill = getBill(auth, bill_id);
                 if (fetchedBill != null) {
-                    if (fetchedBill.getAttachment().getId().equals(file_id)) {
-                        fileStorageService.deleteFile(fetchedBill.getAttachment().getUrl());
-                        fileRepository.delete(fetchedBill.getAttachment());
+                    Optional<File> fileObj = fileRepository.findById(file_id);
+                    if (fileObj.isPresent()) {
+                        File file = fileObj.get();
+                        File dbfile = fetchedBill.getAttachment();
+                        if (dbfile != null && dbfile.equals(file)) {
+                            File fileToDelete = new File(dbfile.getUrl());
+                            fileStorageService.deleteFile(fileToDelete.getUrl());
+                            fetchedBill.setAttachment(null);
+                            billRepo.save(fetchedBill);
+                            fileRepository.deleteById(file_id);
+                        } else {
+                            throw new ValidationException("Invalid FIle Id!");
+                        }
                     } else {
                         throw new ResourceNotFoundException("File Id not found with id: " + file_id);
                     }

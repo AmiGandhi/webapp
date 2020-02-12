@@ -1,6 +1,7 @@
 package neu.csye6225.spring2020.cloud.repository;
 
 import neu.csye6225.spring2020.cloud.model.Bill;
+import neu.csye6225.spring2020.cloud.model.File;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -16,6 +17,9 @@ public interface BillRepository extends JpaRepository<Bill, UUID> {
 
     @Query(value="select * from bill_data b where  b.owner_id =? AND b.bill_id=?", nativeQuery= true)
     public Bill findBillById(UUID id, UUID billId);
+
+/*    @Query(value = "select a from Bill a where a.attachment = :attachment")
+    public Bill getAllAttachmentsForUser(File file);*/
 
     public void deleteById(UUID id);
 
