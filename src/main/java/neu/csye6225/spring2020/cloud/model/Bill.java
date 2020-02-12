@@ -89,9 +89,8 @@ public class Bill {
 
     @OneToOne(cascade = CascadeType.REMOVE)
     @NotFound(action = NotFoundAction.IGNORE)
+    @JsonInclude(value = JsonInclude.Include.NON_NULL)
     @JoinColumn(name = "file_id")
-    //@JsonIgnore
-    //@JsonProperty("attachments")
     private File attachment;
 
     // getters and setters
