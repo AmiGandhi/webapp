@@ -106,7 +106,7 @@ public class EntryController {
     @ResponseBody
     public ResponseEntity deleteBill(@RequestHeader(AUTHORIZATION) String header,
                                      @PathVariable(value = "bill_id") UUID id)
-            throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
+            throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException, FileStorageException {
         return new ResponseEntity(billService.deleteBill(header, id), HttpStatus.NO_CONTENT);
     }
 

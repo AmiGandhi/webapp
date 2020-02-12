@@ -147,10 +147,20 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public ResponseEntity deleteBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
+    public ResponseEntity deleteBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException, FileStorageException {
 
-        Bill fetchedBill = getBill(authHeader, bill_id);
+       /* Bill fetchedBill = getBill(authHeader, bill_id);
         billRepo.delete(fetchedBill);
+        return new ResponseEntity(HttpStatus.NO_CONTENT);*/
+
+       Bill fetchedBill = getBill(authHeader, bill_id);
+        if (fetchedBill != null) {
+            File fileToDelete = fetchedBill.getAttachment();
+            fileStorageService.deleteFile(fileToDelete.getUrl());
+            billRepo.delete(fetchedBill);
+        } else {
+            throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
+        }
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 

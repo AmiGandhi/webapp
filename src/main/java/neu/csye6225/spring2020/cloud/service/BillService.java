@@ -30,7 +30,7 @@ public interface BillService {
             throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException;
 
     ResponseEntity deleteBill(String authHeader, UUID bill_id)
-            throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException;
+            throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException, FileStorageException;
 
     // file for bill
     public File saveAttachment(String auth, UUID bill_id, MultipartFile file)
