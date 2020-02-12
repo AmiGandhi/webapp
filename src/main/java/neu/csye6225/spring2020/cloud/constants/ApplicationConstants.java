@@ -12,6 +12,10 @@ public class ApplicationConstants {
     public static final String GET_BILL = "/v1/bill/{bill_id}";
     public static final String UPDATE_BILL = "/v1/bill/{bill_id}";
     public static final String DELETE_BILL = "/v1/bill/{bill_id}";
+    public static final String ATTACH_FILE = "/v1/bill/{bill_id}/file";
+    public static final String GET_ATTACHMENT = "/v1/bill/{bill_id}/file/{file_id}";
+    public static final String DELETE_ATTACHMENT = "/v1/bill/{bill_id}/file/{file_id}";
+
 
     // Username and Password Validation exceptions
     // =========================================================================================================================

@@ -2,10 +2,8 @@ package neu.csye6225.spring2020.cloud.property;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@ConfigurationProperties(prefix="file")
 public class FileStorageProperties {
-
-    @ConfigurationProperties(prefix="file")
-    public class FileStorageProperties {
 
         private String uploadDir;
 
@@ -17,6 +15,4 @@ public class FileStorageProperties {
             this.uploadDir = uploadDir;
         }
 
-
     }
-}

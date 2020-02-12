@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.*;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -19,35 +20,60 @@ public class File {
     public File() {
     }
 
+    public File(@NotNull String url, Bill bill) {
+        this.url = url;
+        this.bill = bill;
+    }
+
+    @JsonIgnore
+    String size;
+
+    @JsonIgnore
+    String md5;
+
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @NotNull("File name is mandatory!")
     String file_name;
 
     @JsonProperty(value="file_id", access = JsonProperty.Access.READ_ONLY)
     @Id
     @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator", parameters = {
-            @org.hibernate.annotations.Parameter(name = "uuid_gen_strategy_class", value = "org.hibernate.id.uuid.StandardRandomStrategy") })
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator",
+            parameters = { @org.hibernate.annotations.Parameter(name = "uuid_gen_strategy_class", value = "org.hibernate.id.uuid.StandardRandomStrategy") })
     @Column(name = "file_id")
     private UUID id;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @NotNull("File url is mandatory!")
     String url;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd")
-    @NotNull(message="File upload date is mandatory!")
+    @LastModifiedDate
     Date upload_date;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bill_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonIgnore
     private Bill bill;
 
+
     // getter and setter
 
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public String getMd5() {
+        return md5;
+    }
+
+    public void setMd5(String md5) {
+        this.md5 = md5;
+    }
 
     public String getFile_name() {
         return file_name;

@@ -2,12 +2,15 @@ package neu.csye6225.spring2020.cloud.controller;
 
 import javax.validation.Valid;
 
+import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
 import neu.csye6225.spring2020.cloud.exception.ValidationException;
 import neu.csye6225.spring2020.cloud.model.Bill;
+import neu.csye6225.spring2020.cloud.model.File;
 import neu.csye6225.spring2020.cloud.model.User;
 import neu.csye6225.spring2020.cloud.service.BillService;
+import neu.csye6225.spring2020.cloud.service.FileStorageService;
 import neu.csye6225.spring2020.cloud.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +19,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +40,7 @@ public class EntryController {
     @Autowired
     private FileStorageService fileStorageService;
 
+    //user
     @RequestMapping( method = RequestMethod.POST, value=REGISTER, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<User> createUser(@Valid @RequestBody User userBody)
@@ -59,6 +66,7 @@ public class EntryController {
     }
 
 
+    //bill
     @RequestMapping(method = RequestMethod.POST, value=CREATE_BILL, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Bill> createBill(@RequestHeader(AUTHORIZATION) String header,
@@ -102,4 +110,33 @@ public class EntryController {
         return new ResponseEntity(billService.deleteBill(header, id), HttpStatus.NO_CONTENT);
     }
 
+    //file attachment to bill
+    @RequestMapping(value = ATTACH_FILE, method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public File attachFile(@RequestHeader(value = AUTHORIZATION) String auth,
+                           @PathVariable(value = "bill_id") UUID bill_id,
+                           @RequestParam("file") MultipartFile file)
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, FileStorageException, IOException, NoSuchAlgorithmException {
+        return billService.saveAttachment(auth, bill_id, file);
+    }
+
+
+    @RequestMapping(value = GET_ATTACHMENT, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public File getAttachment(@RequestHeader(value = AUTHORIZATION) String auth,
+                                        @PathVariable(value = "bill_id") UUID bill_id,
+                                        @PathVariable(value = "file_id") UUID file_id)
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException {
+        return billService.getAttachment(auth, bill_id, file_id);
+    }
+
+
+    @RequestMapping(value = DELETE_ATTACHMENT, method = RequestMethod.DELETE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAttachment(@RequestHeader(value = AUTHORIZATION) String auth,
+                                 @PathVariable(value = "bill_id") UUID bill_id,
+                                 @PathVariable(value = "file_id") UUID file_id)
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, FileStorageException {
+        billService.deleteAttachment(auth, bill_id, file_id);
+    }
 }

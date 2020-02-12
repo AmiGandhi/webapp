@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.*;
 import neu.csye6225.spring2020.cloud.service.EnumNamePattern;
 import org.hibernate.annotations.GenericGenerator;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -83,12 +85,13 @@ public class Bill {
     @JsonProperty("owner_id")
     private User user;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bill")
-    @JsonProperty("attachments")
-    private List<File> attachments;
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "bill", cascade = CascadeType.REMOVE)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JoinColumn(name = "file_id", nullable = false)
+    //@JsonProperty("attachments")
+    private File attachment;
 
     // getters and setters
-
 
     public UUID getId() {
         return id;
@@ -170,11 +173,11 @@ public class Bill {
         this.user = user;
     }
 
-    public List<File> getAttachments() {
-        return attachments;
+    public File getAttachment() {
+        return attachment;
     }
 
-    public void setAttachments(List<File> attachments) {
-        this.attachments = attachments;
+    public void setAttachment(File attachment) {
+        this.attachment = attachment;
     }
 }
