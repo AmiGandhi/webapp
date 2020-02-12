@@ -3,6 +3,9 @@ package neu.csye6225.spring2020.cloud.util;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 @Component
 @Scope(value = "singleton")
 public class CommonUtil {
@@ -10,6 +13,18 @@ public class CommonUtil {
     public String getFileNameFromPath(String path) {
         String[] pathArr = path.split("/");
         return pathArr[pathArr.length - 1];
+    }
+
+    public String computeMD5Hash(byte[] data) throws NoSuchAlgorithmException {
+        MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+
+        byte[] digest = messageDigest.digest(data);
+
+        StringBuffer sb = new StringBuffer();
+        for (byte b : digest) {
+            sb.append(Integer.toHexString((int) (b & 0xff)));
+        }
+        return sb.toString();
     }
 
     public String stackTraceString(Exception e) {

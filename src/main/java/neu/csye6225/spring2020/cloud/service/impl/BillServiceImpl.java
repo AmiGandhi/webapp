@@ -16,7 +16,6 @@ import neu.csye6225.spring2020.cloud.service.ValidationService;
 import neu.csye6225.spring2020.cloud.util.CommonUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -68,7 +67,8 @@ public class BillServiceImpl implements BillService {
             bill.setUser(u);
             PaymentStatusType pay =  bill.getPaymentStatus();
             bill.setPaymentStatus(pay);
-            //bill.setAttachment(null);
+
+            bill.setAttachment(null);
             Bill savedBill = billRepo.save(bill);
             return savedBill;
 
@@ -169,16 +169,16 @@ public class BillServiceImpl implements BillService {
                         String fileLocation = fileStorageService.storeFile(file);
                         File f = new File(fileLocation);
                         f.setSize(Long.toString(file.getSize()));
-                        f.setMd5(computeMD5Hash(file.getBytes()));
+                        f.setMd5(commonUtil.computeMD5Hash(file.getBytes()));
                         f.setFile_name(commonUtil.getFileNameFromPath(fileLocation));
 
                         fetchedBill.setAttachment(f);
                         return fileRepository.save(f);
                     } else {
-                        throw new ValidationException("Cannot attach the file!");
+                        throw new ValidationException("File already exists!");
                     }
                 } else {
-                    throw new ValidationException("Cannot find the bill!");
+                    throw new ValidationException("Bill does not exist!");
                 }
 
 
@@ -207,10 +207,10 @@ public class BillServiceImpl implements BillService {
                         if (dbfile != null && dbfile.equals(file)) {
                             return file;
                         } else {
-                            throw new ValidationException("Invalid File id!");
+                            throw new ResourceNotFoundException("File not found with id: " + file_id);
                         }
                     } else {
-                            throw new ValidationException("Invalid File id!");
+                            throw new ResourceNotFoundException("File not found with id: " + file_id);
                         }
                     } else {
                     throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
@@ -245,10 +245,10 @@ public class BillServiceImpl implements BillService {
                             billRepo.save(fetchedBill);
                             fileRepository.deleteById(file_id);
                         } else {
-                            throw new ValidationException("Invalid FIle Id!");
+                            throw new ResourceNotFoundException("File not found with id: " + file_id);
                         }
                     } else {
-                        throw new ResourceNotFoundException("File Id not found with id: " + file_id);
+                        throw new ResourceNotFoundException("File not found with id: " + file_id);
                     }
                 } else {
                     throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
@@ -262,43 +262,6 @@ public class BillServiceImpl implements BillService {
             throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
         }
 
-/*        try {
-            Bill fetchedBill = getBill(auth, bill_id);
-            File file = getAttachmentForBill(file_id, fetchedBill);
-            fileStorageService.deleteFile(file.getUrl());
-            fileRepository.delete(file);
-        } catch (Exception e) {
-            logger.error(commonUtil.stackTraceString(e));
-            throw e;
-        }*/
-
-    }
-
-/*    private File getAttachmentForBill(UUID file_id, Bill fetchedBill)
-            throws ValidationException, UnAuthorizedLoginException {
-        Optional<File> attachmentWrapper = fileRepository.findById(file_id);
-        if (!attachmentWrapper.isPresent() || attachmentWrapper.get() == null) {
-            throw new ValidationException("Attachment with ID: " + file_id.toString() + " does not exist");
-        }
-        File f = attachmentWrapper.get();
-        if (fetchedBill.getAttachment().equals(f)) {
-            return f;
-        }
-        throw new UnAuthorizedLoginException(
-                "Attachment with ID: " + file_id.toString() + " is not one of the attachments of your note");
-
-    }*/
-
-    public String computeMD5Hash(byte[] data) throws NoSuchAlgorithmException {
-        MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-
-        byte[] digest = messageDigest.digest(data);
-
-        StringBuffer sb = new StringBuffer();
-        for (byte b : digest) {
-            sb.append(Integer.toHexString((int) (b & 0xff)));
-        }
-        return sb.toString();
     }
 
 }
