@@ -1,23 +1,35 @@
 package neu.csye6225.spring2020.cloud.service.impl;
 
+import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
 import neu.csye6225.spring2020.cloud.exception.ValidationException;
 import neu.csye6225.spring2020.cloud.model.Bill;
+import neu.csye6225.spring2020.cloud.model.File;
 import neu.csye6225.spring2020.cloud.model.PaymentStatusType;
 import neu.csye6225.spring2020.cloud.model.User;
 import neu.csye6225.spring2020.cloud.repository.BillRepository;
+import neu.csye6225.spring2020.cloud.repository.FileRepository;
 import neu.csye6225.spring2020.cloud.service.BillService;
+import neu.csye6225.spring2020.cloud.service.FileStorageService;
 import neu.csye6225.spring2020.cloud.service.ValidationService;
+import neu.csye6225.spring2020.cloud.util.CommonUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import static neu.csye6225.spring2020.cloud.constants.ApplicationConstants.INVALID_CREDENTIALS;
 
@@ -33,6 +45,17 @@ public class BillServiceImpl implements BillService {
     @Autowired
     private ValidationService validationService;
 
+    @Autowired
+    private FileRepository fileRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    @Autowired
+    private CommonUtil commonUtil;
+
+    private static final Logger logger = LogManager.getLogger(BillServiceImpl.class);
+
     @Override
     public Bill createBill(String authHeader, Bill bill) throws ValidationException, UnAuthorizedLoginException {
 
@@ -44,6 +67,8 @@ public class BillServiceImpl implements BillService {
             bill.setUser(u);
             PaymentStatusType pay =  bill.getPaymentStatus();
             bill.setPaymentStatus(pay);
+
+            bill.setAttachment(null);
             Bill savedBill = billRepo.save(bill);
             return savedBill;
 
@@ -122,12 +147,131 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public ResponseEntity deleteBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
+    public ResponseEntity deleteBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException, FileStorageException {
 
-        Bill fetchedBill = getBill(authHeader, bill_id);
+       /* Bill fetchedBill = getBill(authHeader, bill_id);
         billRepo.delete(fetchedBill);
+        return new ResponseEntity(HttpStatus.NO_CONTENT);*/
+
+       Bill fetchedBill = getBill(authHeader, bill_id);
+        if (fetchedBill != null) {
+            File fileToDelete = fetchedBill.getAttachment();
+            fileStorageService.deleteFile(fileToDelete.getUrl());
+            billRepo.delete(fetchedBill);
+        } else {
+            throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
+        }
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 
+
+    //implementation for bill attachment
+    @Override
+    public File saveAttachment(String auth, UUID bill_id, MultipartFile file)
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, FileStorageException, IOException, NoSuchAlgorithmException {
+
+        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
+        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
+            try {
+                Bill fetchedBill = getBill(auth, bill_id);
+                if (fetchedBill != null) {
+                    if (fetchedBill.getAttachment() == null) {
+                        String fileLocation = fileStorageService.storeFile(file);
+                        File f = new File(fileLocation);
+                        f.setSize(Long.toString(file.getSize()));
+                        f.setMd5(commonUtil.computeMD5Hash(file.getBytes()));
+                        f.setFile_name(commonUtil.getFileNameFromPath(fileLocation));
+
+                        fetchedBill.setAttachment(f);
+                        return fileRepository.save(f);
+                    } else {
+                        throw new ValidationException("File already exists!");
+                    }
+                } else {
+                    throw new ValidationException("Bill does not exist!");
+                }
+
+
+            } catch (Exception e) {
+                logger.error(commonUtil.stackTraceString(e));
+                throw e;
+            }
+        } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+            }
+    }
+
+    @Override
+    public File getAttachment(String auth, UUID bill_id, UUID file_id)
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException {
+
+        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
+        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
+            try {
+                Bill fetchedBill = getBill(auth, bill_id);
+                if (fetchedBill != null) {
+                    Optional <File> fileObj = fileRepository.findById(file_id);
+                    if (fileObj.isPresent()) {
+                        File file = fileObj.get();
+                        File dbfile = fetchedBill.getAttachment();
+                        if (dbfile != null && dbfile.equals(file)) {
+                            return file;
+                        } else {
+                            throw new ResourceNotFoundException("File not found with id: " + file_id);
+                        }
+                    } else {
+                            throw new ResourceNotFoundException("File not found with id: " + file_id);
+                        }
+                    } else {
+                    throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
+                }
+
+            } catch (Exception e) {
+                logger.error(commonUtil.stackTraceString(e));
+                throw e;
+            }
+        } else {
+            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+            }
+    }
+
+    @Override
+    public void deleteAttachment(String auth, UUID bill_id, UUID file_id)
+            throws ValidationException, UnAuthorizedLoginException, FileStorageException, ResourceNotFoundException {
+
+        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
+        if (responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
+            try {
+                Bill fetchedBill = getBill(auth, bill_id);
+                if (fetchedBill != null) {
+                    Optional<File> fileObj = fileRepository.findById(file_id);
+                    if (fileObj.isPresent()) {
+                        File file = fileObj.get();
+                        File dbfile = fetchedBill.getAttachment();
+                        if (dbfile != null && dbfile.equals(file)) {
+                            File fileToDelete = new File(dbfile.getUrl());
+                            fileStorageService.deleteFile(fileToDelete.getUrl());
+                            fetchedBill.setAttachment(null);
+                            billRepo.save(fetchedBill);
+                            fileRepository.deleteById(file_id);
+                        } else {
+                            throw new ResourceNotFoundException("File not found with id: " + file_id);
+                        }
+                    } else {
+                        throw new ResourceNotFoundException("File not found with id: " + file_id);
+                    }
+                } else {
+                    throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
+                }
+
+            } catch (Exception e) {
+                logger.error(commonUtil.stackTraceString(e));
+                throw e;
+            }
+        } else {
+            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+        }
+
+    }
 
 }

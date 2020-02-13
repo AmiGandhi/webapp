@@ -1,9 +1,12 @@
 package neu.csye6225.spring2020.cloud.model;
 
 import com.fasterxml.jackson.annotation.*;
+
 import neu.csye6225.spring2020.cloud.service.EnumNamePattern;
 import org.hibernate.annotations.GenericGenerator;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -83,8 +86,14 @@ public class Bill {
     @JsonProperty("owner_id")
     private User user;
 
-    // getters and setters
 
+    @OneToOne(cascade = CascadeType.REMOVE)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JsonInclude(value = JsonInclude.Include.NON_NULL)
+    @JoinColumn(name = "file_id")
+    private File attachment;
+
+    // getters and setters
 
     public UUID getId() {
         return id;
@@ -164,5 +173,13 @@ public class Bill {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public File getAttachment() {
+        return attachment;
+    }
+
+    public void setAttachment(File attachment) {
+        this.attachment = attachment;
     }
 }
