@@ -19,14 +19,14 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final Path fileStorageLocation;
 
     public FileStorageServiceImpl(FileStorageProperties fileStorageProperties) throws FileStorageException {
-        this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir()).toAbsolutePath().normalize();
+        this.fileStorageLocation = Paths.get(System.getProperty("user.home")).toAbsolutePath().normalize();
 
-        try {
+/*        try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
             throw new FileStorageException("Could not create the directory where the uploaded files will be stored.",
                     ex);
-        }
+        }*/
     }
 
 
