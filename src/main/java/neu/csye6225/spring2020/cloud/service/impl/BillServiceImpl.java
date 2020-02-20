@@ -155,8 +155,10 @@ public class BillServiceImpl implements BillService {
 
        Bill fetchedBill = getBill(authHeader, bill_id);
         if (fetchedBill != null) {
-            File fileToDelete = fetchedBill.getAttachment();
-            fileStorageService.deleteFile(fileToDelete.getUrl());
+            if (fetchedBill.getAttachment() != null) {
+                File fileToDelete = fetchedBill.getAttachment();
+                fileStorageService.deleteFile(fileToDelete.getUrl());
+            }
             billRepo.delete(fetchedBill);
         } else {
             throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
