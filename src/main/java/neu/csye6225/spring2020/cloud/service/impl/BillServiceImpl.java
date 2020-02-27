@@ -1,5 +1,10 @@
 package neu.csye6225.spring2020.cloud.service.impl;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
@@ -16,12 +21,16 @@ import neu.csye6225.spring2020.cloud.service.ValidationService;
 import neu.csye6225.spring2020.cloud.util.CommonUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -53,6 +62,13 @@ public class BillServiceImpl implements BillService {
 
     @Autowired
     private CommonUtil commonUtil;
+
+    private AmazonS3 s3client;
+
+    @Value("${spring.profiles.active}")
+    private String profile;
+    @Value("${amazonProperties.bucketName}")
+    private String bucketName;
 
     private static final Logger logger = LogManager.getLogger(BillServiceImpl.class);
 
@@ -149,15 +165,24 @@ public class BillServiceImpl implements BillService {
     @Override
     public ResponseEntity deleteBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException, FileStorageException {
 
-       /* Bill fetchedBill = getBill(authHeader, bill_id);
-        billRepo.delete(fetchedBill);
-        return new ResponseEntity(HttpStatus.NO_CONTENT);*/
-
        Bill fetchedBill = getBill(authHeader, bill_id);
         if (fetchedBill != null) {
             if (fetchedBill.getAttachment() != null) {
-                File fileToDelete = fetchedBill.getAttachment();
-                fileStorageService.deleteFile(fileToDelete.getUrl());
+                if (!profile.equalsIgnoreCase("aws")) {
+                    File fileToDelete = fetchedBill.getAttachment();
+                    fileStorageService.deleteFile(fileToDelete.getUrl());
+                } else {
+                    String fileToDelete = null;
+                    try {
+                        String fileLocation = fetchedBill.getAttachment().getUrl();
+                        fileToDelete = fileLocation.substring(fileLocation.lastIndexOf("/") + 1);
+                        s3client.deleteObject(
+                                new DeleteObjectRequest(bucketName, fileToDelete));
+                    } catch (Exception e) {
+                        throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
+                    }
+                }
+
             }
             billRepo.delete(fetchedBill);
         } else {
@@ -178,14 +203,47 @@ public class BillServiceImpl implements BillService {
                 Bill fetchedBill = getBill(auth, bill_id);
                 if (fetchedBill != null) {
                     if (fetchedBill.getAttachment() == null) {
+
                         String fileLocation = fileStorageService.storeFile(file);
                         File f = new File(fileLocation);
                         f.setSize(Long.toString(file.getSize()));
                         f.setMd5(commonUtil.computeMD5Hash(file.getBytes()));
                         f.setFile_name(commonUtil.getFileNameFromPath(fileLocation));
 
+                        File newfile = fileRepository.save(f);
                         fetchedBill.setAttachment(f);
-                        return fileRepository.save(f);
+                        billRepo.save(fetchedBill);
+
+                        // new file to store in s3
+                        String fileNewName = generateFileName(file);
+
+                        if (!profile.equalsIgnoreCase("aws")) {
+//                            File newfile = fileRepository.save(f);
+//                            fetchedBill.setAttachment(f);
+//                            billRepo.save(fetchedBill);
+                            Path targetLocation = Paths.get(f.getUrl());
+                            byte[] fileBytes = file.getBytes();
+                            Files.write(targetLocation, fileBytes);
+                        } else {
+                            try {
+                                s3client = new AmazonS3Client();
+                                ObjectMetadata objectMeatadata = new ObjectMetadata();
+                                objectMeatadata.setContentType(file.getContentType());
+                                fileNewName = generateFileName(file);
+                                f.setUrl("https://" + bucketName + ".s3.amazonaws.com" + "/" + fileNewName);
+                                s3client.putObject(
+                                        new PutObjectRequest(bucketName, fileNewName, file.getInputStream(), objectMeatadata));
+                            } catch (Exception e) {
+
+                                throw new FileStorageException("File not stored in S3 bucket. File name: " + fileNewName+""+e);
+                            }
+                            fileRepository.save(f);
+                            fetchedBill.setAttachment(f);
+                            billRepo.save(fetchedBill);
+                        }
+
+                        return newfile;
+
                     } else {
                         throw new ValidationException("File already exists!");
                     }
@@ -193,14 +251,13 @@ public class BillServiceImpl implements BillService {
                     throw new ValidationException("Bill does not exist!");
                 }
 
-
             } catch (Exception e) {
                 logger.error(commonUtil.stackTraceString(e));
                 throw e;
             }
         } else {
-                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
-            }
+            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+        }
     }
 
     @Override
@@ -251,11 +308,25 @@ public class BillServiceImpl implements BillService {
                         File file = fileObj.get();
                         File dbfile = fetchedBill.getAttachment();
                         if (dbfile != null && dbfile.equals(file)) {
-                            File fileToDelete = new File(dbfile.getUrl());
-                            fileStorageService.deleteFile(fileToDelete.getUrl());
+                            if (!profile.equalsIgnoreCase("aws")) {
+                                File fileToDelete = new File(dbfile.getUrl());
+                                fileStorageService.deleteFile(fileToDelete.getUrl());
+                            } else {
+                                String fileToDelete = null;
+                                try {
+                                    String fileLocation = dbfile.getUrl();
+                                    fileToDelete = fileLocation.substring(fileLocation.lastIndexOf("/") + 1);
+                                    s3client.deleteObject(
+                                            new DeleteObjectRequest(bucketName, fileToDelete));
+                                } catch (Exception e) {
+                                    throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
+                                }
+                            }
+
                             fetchedBill.setAttachment(null);
                             billRepo.save(fetchedBill);
                             fileRepository.deleteById(file_id);
+
                         } else {
                             throw new ResourceNotFoundException("File not found with id: " + file_id);
                         }
@@ -265,7 +336,6 @@ public class BillServiceImpl implements BillService {
                 } else {
                     throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
                 }
-
             } catch (Exception e) {
                 logger.error(commonUtil.stackTraceString(e));
                 throw e;
@@ -273,7 +343,15 @@ public class BillServiceImpl implements BillService {
         } else {
             throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
         }
+    }
 
+    private String generateFileName(MultipartFile multiPart) {
+        return generateUUID() + "-" + multiPart.getOriginalFilename().replace(" ", "_");
+    }
+
+    private String generateUUID() {
+        UUID uuid = UUID.randomUUID();
+        return uuid.toString();
     }
 
 }
