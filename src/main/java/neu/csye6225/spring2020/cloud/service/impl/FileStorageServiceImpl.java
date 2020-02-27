@@ -4,6 +4,7 @@ import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ValidationException;
 import neu.csye6225.spring2020.cloud.property.FileStorageProperties;
 import neu.csye6225.spring2020.cloud.service.FileStorageService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,20 +14,19 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+
+
 @Service
 public class FileStorageServiceImpl implements FileStorageService {
 
     private final Path fileStorageLocation;
 
-    public FileStorageServiceImpl(FileStorageProperties fileStorageProperties) throws FileStorageException {
-        this.fileStorageLocation = Paths.get(System.getProperty("user.home")).toAbsolutePath().normalize();
 
-/*        try {
-            Files.createDirectories(this.fileStorageLocation);
-        } catch (Exception ex) {
-            throw new FileStorageException("Could not create the directory where the uploaded files will be stored.",
-                    ex);
-        }*/
+    @Value("${spring.profiles.active}")
+    private String profile;
+
+    public FileStorageServiceImpl() throws FileStorageException {
+        this.fileStorageLocation = Paths.get(System.getProperty("user.home")).toAbsolutePath().normalize();
     }
 
 
@@ -50,7 +50,10 @@ public class FileStorageServiceImpl implements FileStorageService {
             } else {
                 // Copy file to the target location (Replacing existing file with the same name)
                 Path targetLocation = this.fileStorageLocation.resolve(fileName);
-                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+                if(!profile.equalsIgnoreCase("aws")) {
+                    Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+                }
+
                 return targetLocation.toString();
             }
 
