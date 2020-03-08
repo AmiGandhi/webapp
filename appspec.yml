@@ -4,6 +4,10 @@ files:
   - source: /home/circleci/webapp/target/cloud-0.0.1-SNAPSHOT.war
     destination: /opt/tomcat/webapps
 hooks:
+  ApplicationStop:
+    - location: ./codedeploy/applicationStop.sh
+      timeout: 180
+      runas: ubuntu
   AfterInstall:
     - location: ./codedeploy/afterInstall.sh
       timeout: 180
