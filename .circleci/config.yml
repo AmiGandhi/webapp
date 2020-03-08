@@ -20,7 +20,13 @@ jobs: # a collection of steps
 
       - run:
           name: Install awscli
-          command: sudo pip install awscli
+          command: |
+            echo "Installing AWS CLI"
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            echo "AWS CLI installed successfully!"
+            aws --version
 
       - run:
           name: Build Artifact
