@@ -1,0 +1,14 @@
+version: 0.0
+os: linux
+files:
+  - source: /home/circleci/webapp/target/cloud-0.0.1-SNAPSHOT.war
+    destination: /opt/tomcat/webapps
+hooks:
+  AfterInstall:
+    - location: ./codedeploy/afterInstall.sh
+      timeout: 180
+      runas: ubuntu
+  ApplicationStart:
+    - location: ./codedeploy/applicationStart.sh
+      timeout: 180
+      runas: ubuntu
