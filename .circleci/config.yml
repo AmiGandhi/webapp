@@ -29,6 +29,14 @@ jobs: # a collection of steps
             aws --version
 
       - run:
+          name: Install less
+          command: |
+            echo "Installing less dependency for codedeploy"
+            sudo apt-get update
+            sudo apt-get install less -y
+            echo "less installed successfully"
+
+      - run:
           name: Build Artifact
           command: |
             echo "Building the artifact with Maven"
