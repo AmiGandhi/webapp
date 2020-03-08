@@ -74,7 +74,7 @@ jobs: # a collection of steps
           command: |
             echo "Calling CodeDeploy Agent to pick the artifact and deploy on EC2 instance"
             aws configure set region ${AWS_REGION}
-            aws deploy create-deployment --application-name ${CODEDEPLOY_APPLICATION_NAME} --deployment-config-name CodeDeployDefault.OneAtATime --deployment-group-name ${CODEDEPLOY_APPLICATION_DEPLOYMENTGROUP_NAME} --s3-location bucket=${CODEDEPLOY_BUCKETNAME},bundleType=zip,key=csye6225-webapp-${CIRCLE_BUILD_NUM}.zip
+            aws deploy create-deployment --application-name ${CODEDEPLOY_APPLICATION_NAME} --deployment-config-name CodeDeployDefault.AllAtOnce --deployment-group-name ${CODEDEPLOY_APPLICATION_DEPLOYMENTGROUP_NAME} --s3-location bucket=${CODEDEPLOY_BUCKETNAME},bundleType=zip,key=csye6225-webapp-${CIRCLE_BUILD_NUM}.zip
 
 
   build:
