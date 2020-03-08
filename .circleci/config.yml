@@ -18,24 +18,6 @@ jobs: # a collection of steps
       - run: mvn dependency:go-offline # gets the project dependencies
       - run: mvn test # run the actual tests
 
-
-  build:
-    
-    working_directory: ~/webapp # directory where steps will run
-
-    docker: # run the steps with Docker
-      - image: circleci/openjdk:8-jdk-stretch 
-      - image: circleci/postgres:9.6.2-alpine
-        environment:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgresql
-          POSTGRES_DB: users
-
-    steps: # a collection of executable commands
-
-      - checkout # check out source code to working directory
-      - run: mvn dependency:go-offline # gets the project dependencies     
-      - run: mvn test # run the actual tests
       - run:
           name: Install awscli
           command: sudo pip install awscli
@@ -90,6 +72,79 @@ jobs: # a collection of steps
             echo "Calling CodeDeploy Agent to pick the artifact and deploy on EC2 instance"
             aws configure set region ${AWS_REGION}
             aws deploy create-deployment --application-name ${CODEDEPLOY_APPLICATION_NAME} --deployment-config-name CodeDeployDefault.OneAtATime --deployment-group-name ${CODEDEPLOY_APPLICATION_DEPLOYMENTGROUP_NAME} --s3-location bucket=${CODEDEPLOY_BUCKETNAME},bundleType=zip,key=csye6225-webapp-${CIRCLE_BUILD_NUM}.zip
+
+
+  build:
+    
+    working_directory: ~/webapp # directory where steps will run
+
+    docker: # run the steps with Docker
+      - image: circleci/openjdk:8-jdk-stretch 
+      - image: circleci/postgres:9.6.2-alpine
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgresql
+          POSTGRES_DB: users
+
+    steps: # a collection of executable commands
+
+      - checkout # check out source code to working directory
+      - run: mvn dependency:go-offline # gets the project dependencies     
+      - run: mvn test # run the actual tests
+#      - run:
+#          name: Install awscli
+#          command: sudo pip install awscli
+#
+#      - run:
+#          name: Build Artifact
+#          command: |
+#            echo "Building the artifact with Maven"
+#            mvn package -Dspring.datasource.url=${DB_URL} -Dspring.datasource.username=${DB_USERNAME} -Dspring.datasource.password=${DB_PASSWORD} -DamazonProperties.bucketName=${CODEDEPLOY_BUCKETNAME} -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}
+#            pwd
+#            ls -al
+#            ls -al build/libs
+#
+#      - run:
+#          name: Zip Artifact
+#          command: |
+#            echo "Hello the current build number is ${CIRCLE_BUILD_NUM}"
+#            pwd
+#            echo "Listing current directory content"
+#            ls -al
+#            echo "Making the codedeploy_artifact directory"
+#            mkdir -p codedeploy_artifact
+#            echo "Changing directory to codedeploy_artifact"
+#            cd codedeploy_artifact
+#            echo "Zipping all files"
+#            zip -r csye6225-webapp-${CIRCLE_BUILD_NUM}.zip /home/circleci/webapp/target/cloud-0.0.1-SNAPSHOT.war *.sh *.yml
+#            pwd
+#            ls -al
+#            echo "Moving zip to the codedeploy_artifact folder"
+#            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.zip codedeploy_artifact/
+#            pwd
+#            ls -al
+#            cd codedeploy_artifact
+#            pwd
+#            ls -al
+#            cd ..
+#            pwd
+#            ls -al
+#
+#      - run:
+#          name: Upload Artifact to S3
+#          command: |
+#            echo "Uploading Artifact to S3 bucket ${CODEDEPLOY_BUCKETNAME}"
+#            cd codedeploy_artifact
+#            aws s3 cp csye6225-webapp-${CIRCLE_BUILD_NUM}.zip s3://${CODEDEPLOY_BUCKETNAME}
+#            echo "Artifact uploaded to S3 successfully"
+#            cd ..
+#
+#      - run:
+#          name: Make CodeDeploy API call
+#          command: |
+#            echo "Calling CodeDeploy Agent to pick the artifact and deploy on EC2 instance"
+#            aws configure set region ${AWS_REGION}
+#            aws deploy create-deployment --application-name ${CODEDEPLOY_APPLICATION_NAME} --deployment-config-name CodeDeployDefault.OneAtATime --deployment-group-name ${CODEDEPLOY_APPLICATION_DEPLOYMENTGROUP_NAME} --s3-location bucket=${CODEDEPLOY_BUCKETNAME},bundleType=zip,key=csye6225-webapp-${CIRCLE_BUILD_NUM}.zip
 
 
 workflows:
