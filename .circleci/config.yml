@@ -45,8 +45,6 @@ jobs: # a collection of steps
             ls -al
             echo "Making the codedeploy_artifact directory"
             mkdir -p codedeploy_artifact
-            echo "Changing directory to codedeploy_artifact"
-            cd codedeploy_artifact
             echo "Zipping all files"
             zip -r csye6225-webapp-${CIRCLE_BUILD_NUM}.zip /home/circleci/webapp/target/cloud-0.0.1-SNAPSHOT.war *.sh *.yml
             pwd
