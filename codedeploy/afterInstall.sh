@@ -3,7 +3,6 @@
 echo "Entered after install hook"
 
 sudo rm -rf /opt/tomcat/webapps/docs  /opt/tomcat/webapps/examples /opt/tomcat/webapps/host-manager  /opt/tomcat/webapps/manager /opt/tomcat/webapps/cloud-0.0.1-SNAPSHOT
-
 sudo chown tomcat:tomcat /opt/tomcat/webapps/cloud-0.0.1-SNAPSHOT.war
 
 #Killing the application
