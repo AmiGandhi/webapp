@@ -5,14 +5,14 @@ files:
     destination: /opt/tomcat/webapps
 hooks:
   ApplicationStop:
-    - location: ./codedeploy/applicationStop.sh
+    - location: /home/circleci/webapp/codedeploy/applicationStop.sh
       timeout: 180
       runas: ubuntu
   AfterInstall:
-    - location: ./codedeploy/afterInstall.sh
+    - location: /home/circleci/webapp/codedeploy/afterInstall.sh
       timeout: 180
       runas: ubuntu
   ApplicationStart:
-    - location: ./codedeploy/applicationStart.sh
+    - location: /home/circleci/webapp/codedeploy/applicationStart.sh
       timeout: 180
       runas: ubuntu
