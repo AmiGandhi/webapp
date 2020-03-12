@@ -37,6 +37,72 @@ jobs: # a collection of steps
       - run: mvn dependency:go-offline # gets the project dependencies     
       - run: mvn test # run the actual tests
 
+      - run:
+          name: Install awscli
+          command: |
+            echo "Installing AWS CLI"
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            echo "AWS CLI installed successfully!"
+            aws --version
+
+      - run:
+          name: Install less
+          command: |
+            echo "Installing less dependency for codedeploy"
+            sudo apt-get update
+            sudo apt-get install less -y
+            echo "less installed successfully"
+
+      - run:
+          name: Build Artifact
+          command: |
+            echo "Building the artifact with Maven"
+            mvn package -Dspring.datasource.url=${DB_URL} -Dspring.datasource.username=${DB_USERNAME} -Dspring.datasource.password=${DB_PASSWORD} -DamazonProperties.bucketName=${CODEDEPLOY_BUCKETNAME} -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}
+            pwd
+            ls -al
+
+      - run:
+          name: Zip Artifact
+          command: |
+            echo "Hello the current build number is ${CIRCLE_BUILD_NUM}"
+            pwd
+            echo "Listing current directory content"
+            ls -al
+            echo "Making the codedeploy_artifact directory"
+            mkdir -p codedeploy_artifact
+            echo "Zipping all files"
+            zip -r csye6225-webapp-${CIRCLE_BUILD_NUM}.zip /home/circleci/webapp/target/cloud-0.0.1-SNAPSHOT.war codedeploy/*.sh *.yml
+            pwd
+            ls -al
+            echo "Moving zip to the codedeploy_artifact folder"
+            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.zip codedeploy_artifact/
+            pwd
+            ls -al
+            cd codedeploy_artifact
+            pwd
+            ls -al
+            cd ..
+            pwd
+            ls -al
+
+      - run:
+          name: Upload Artifact to S3
+          command: |
+            echo "Uploading Artifact to S3 bucket ${CODEDEPLOY_BUCKETNAME}"
+            cd codedeploy_artifact
+            aws s3 cp csye6225-webapp-${CIRCLE_BUILD_NUM}.zip s3://${CODEDEPLOY_BUCKETNAME}
+            echo "Artifact uploaded to S3 successfully"
+            cd ..
+
+      - run:
+          name: Make CodeDeploy API call
+          command: |
+            echo "Calling CodeDeploy Agent to pick the artifact and deploy on EC2 instance"
+            aws configure set region ${AWS_REGION}
+            aws deploy create-deployment --application-name ${CODEDEPLOY_APPLICATION_NAME} --deployment-config-name CodeDeployDefault.AllAtOnce --deployment-group-name ${CODEDEPLOY_APPLICATION_DEPLOYMENTGROUP_NAME} --s3-location bucket=${CODEDEPLOY_BUCKETNAME},bundleType=zip,key=csye6225-webapp-${CIRCLE_BUILD_NUM}.zip
+
 
 workflows:
   version: 2
