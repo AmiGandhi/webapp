@@ -23,8 +23,8 @@ public interface BillService {
     List<Bill> getAllBills(String authHeader)
             throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException;
 
-    List<Bill> getAllBillsAgain(String authHeader)
-            throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException;
+//    List<Bill> getAllBillsAgain(String authHeader)
+//            throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException;
 
     Bill getBill(String authHeader, UUID bill_id)
             throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException;
