@@ -109,21 +109,21 @@ public class BillServiceImpl implements BillService {
         }
     }
 
-    // same service as above with different GET url to check if CI/CD pipeline works fine
-    @Override
-    public List<Bill> getAllBillsAgain(String authHeader) throws UnAuthorizedLoginException, ValidationException {
-
-        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
-        User u = (User) responseBody.getBody();
-        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
-        {
-            List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
-            return bill_list;
-
-        } else {
-            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
-        }
-    }
+//    // same service as above with different GET url to check if CI/CD pipeline works fine
+//    @Override
+//    public List<Bill> getAllBillsAgain(String authHeader) throws UnAuthorizedLoginException, ValidationException {
+//
+//        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
+//        User u = (User) responseBody.getBody();
+//        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
+//        {
+//            List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
+//            return bill_list;
+//
+//        } else {
+//            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+//        }
+//    }
 
     @Override
     public Bill getBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
