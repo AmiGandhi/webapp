@@ -5,8 +5,8 @@ echo "Entered after install hook"
 sudo systemctl stop tomcat.service
 echo "Application stopped successfully"
 
-sudo rm -rf /opt/tomcat/webapps/docs  /opt/tomcat/webapps/examples /opt/tomcat/webapps/host-manager  /opt/tomcat/webapps/manager /opt/tomcat/webapps/cloud-0.0.1-SNAPSHOT
-sudo chown tomcat:tomcat /opt/tomcat/webapps/cloud-0.0.1-SNAPSHOT.war
+sudo rm -rf /opt/tomcat/webapps/docs  /opt/tomcat/webapps/examples /opt/tomcat/webapps/host-manager  /opt/tomcat/webapps/manager /opt/tomcat/webapps/ROOT
+sudo chown tomcat:tomcat /opt/tomcat/webapps/ROOT.war
 
 #Killing the application
 kill -9 $(ps -ef|grep cloud-0.0.1 | grep -v grep | awk '{print $2}')
