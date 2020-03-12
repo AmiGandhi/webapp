@@ -83,6 +83,14 @@ public class EntryController {
         return new ResponseEntity<List<Bill>>(billService.getAllBills(header), HttpStatus.OK);
     }
 
+    // similar call as above with different Request mapping
+    @RequestMapping(method = RequestMethod.GET, value = GET_ALL_BILLS_v2, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<Bill>> getAllBillsAgain(@RequestHeader(AUTHORIZATION) String header)
+            throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
+        return new ResponseEntity<List<Bill>>(billService.getAllBills(header), HttpStatus.OK);
+    }
+
     @RequestMapping(method = RequestMethod.GET, value = GET_BILL, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Bill> getBill(@RequestHeader(AUTHORIZATION) String header,
