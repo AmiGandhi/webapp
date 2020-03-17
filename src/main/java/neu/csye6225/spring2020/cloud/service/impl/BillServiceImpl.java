@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +39,7 @@ import java.util.UUID;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Level;
 
 import static neu.csye6225.spring2020.cloud.constants.ApplicationConstants.INVALID_CREDENTIALS;
 
@@ -76,36 +76,45 @@ public class BillServiceImpl implements BillService {
     @Override
     public Bill createBill(String authHeader, Bill bill) throws ValidationException, UnAuthorizedLoginException {
 
-        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
-        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
-        {
-            User u = (User) responseBody.getBody();
-            validationService.isBillValid(bill);
-            bill.setUser(u);
-            PaymentStatusType pay =  bill.getPaymentStatus();
-            bill.setPaymentStatus(pay);
+        try {
+            ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
+            if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
+            {
+                User u = (User) responseBody.getBody();
+                validationService.isBillValid(bill);
+                bill.setUser(u);
+                PaymentStatusType pay =  bill.getPaymentStatus();
+                bill.setPaymentStatus(pay);
 
-            bill.setAttachment(null);
-            Bill savedBill = billRepo.save(bill);
-            return savedBill;
-
-        } else {
-            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+                bill.setAttachment(null);
+                Bill savedBill = billRepo.save(bill);
+                logger.info("Bill created successfully!");
+                return savedBill;
+            } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+            }
+        } catch (Exception e) {
+            logger.error(commonUtil.stackTraceString(e));
+            throw e;
         }
     }
 
     @Override
     public List<Bill> getAllBills(String authHeader) throws UnAuthorizedLoginException, ValidationException {
 
-        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
-        User u = (User) responseBody.getBody();
-        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
-        {
-            List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
-            return bill_list;
-
-        } else {
-            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+        try {
+            ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
+            User u = (User) responseBody.getBody();
+            if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
+            {
+                List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
+                return bill_list;
+            } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+            }
+        } catch (Exception e) {
+            logger.log(Level.ERROR, commonUtil.stackTraceString(e));
+            throw e;
         }
     }
 
@@ -128,84 +137,96 @@ public class BillServiceImpl implements BillService {
     @Override
     public Bill getBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
 
-        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
-        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
-        {
-            User u = (User) responseBody.getBody();
-            Optional<Bill> billWrapper = billRepo.findById(bill_id);
-            Bill b = billRepo.findBillById(u.getId(), bill_id);
-            if (!billWrapper.isPresent() || b == null) {
-                throw new ResourceNotFoundException("Bill with ID: " + bill_id.toString() + " does not exist");
+        try {
+            ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
+            if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
+            {
+                User u = (User) responseBody.getBody();
+                Optional<Bill> billWrapper = billRepo.findById(bill_id);
+                Bill b = billRepo.findBillById(u.getId(), bill_id);
+                if (!billWrapper.isPresent() || b == null) {
+                    throw new ResourceNotFoundException("Bill with ID: " + bill_id.toString() + " does not exist");
+                }
+                if (billWrapper.isPresent() && b==null) {
+                    throw new UnAuthorizedLoginException("Unauthorized to access the bill!");
+                }
+                return b;
+            } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
             }
-            if (billWrapper.isPresent() && b==null) {
-                throw new UnAuthorizedLoginException("Unauthorized to access the bill!");
-            }
-            return b;
-
-        } else {
-            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+        } catch (Exception e) {
+            logger.error(commonUtil.stackTraceString(e));
+            throw e;
         }
-
     }
 
     @Override
     public Bill updateBill(String authHeader, UUID bill_id, Bill bill) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
 
-        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
-        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
-        {
-            validationService.isBillValid(bill);
-            Optional<Bill> billWrapper = billRepo.findById(bill_id);
+        try {
+            ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
+            if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
+            {
+                validationService.isBillValid(bill);
+                Optional<Bill> billWrapper = billRepo.findById(bill_id);
 
-            if (!billWrapper.isPresent()) {
-                throw new ResourceNotFoundException("Bill with ID: " + bill_id.toString() + " does not exist");
+                if (!billWrapper.isPresent()) {
+                    throw new ResourceNotFoundException("Bill with ID: " + bill_id.toString() + " does not exist");
+                }
+                if (billWrapper.isPresent() && billWrapper.get().getUser()!=responseBody.getBody()) {
+                    throw new UnAuthorizedLoginException("Unauthorized to access the bill!");
+                }
+                Bill savedBill=billWrapper.get();
+                savedBill.setAmountDue(bill.getAmountDue());
+                savedBill.setBillDate(bill.getBillDate());
+                savedBill.setCategories(bill.getCategories());
+                savedBill.setDueDate(bill.getDueDate());
+                savedBill.setPaymentStatus(bill.getPaymentStatus());
+                savedBill.setVendor(bill.getVendor());
+                billRepo.save(savedBill);
+                logger.info("Bill updated successfully!");
+                return savedBill;
+            } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
             }
-            if (billWrapper.isPresent() && billWrapper.get().getUser()!=responseBody.getBody()) {
-                throw new UnAuthorizedLoginException("Unauthorized to access the bill!");
-            }
-            Bill savedBill=billWrapper.get();
-            savedBill.setAmountDue(bill.getAmountDue());
-            savedBill.setBillDate(bill.getBillDate());
-            savedBill.setCategories(bill.getCategories());
-            savedBill.setDueDate(bill.getDueDate());
-            savedBill.setPaymentStatus(bill.getPaymentStatus());
-            savedBill.setVendor(bill.getVendor());
-            billRepo.save(savedBill);
-            return savedBill;
-
-        } else {
-            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+        } catch (Exception e) {
+            logger.error(commonUtil.stackTraceString(e));
+            throw e;
         }
-
     }
 
     @Override
     public ResponseEntity deleteBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException, FileStorageException {
 
-       Bill fetchedBill = getBill(authHeader, bill_id);
-        if (fetchedBill != null) {
-            if (fetchedBill.getAttachment() != null) {
-                if (!profile.equalsIgnoreCase("aws")) {
-                    File fileToDelete = fetchedBill.getAttachment();
-                    fileStorageService.deleteFile(fileToDelete.getUrl());
-                } else {
-                    String fileToDelete = null;
-                    try {
-                        String fileLocation = fetchedBill.getAttachment().getUrl();
-                        fileToDelete = fileLocation.substring(fileLocation.lastIndexOf("/") + 1);
-                        s3client.deleteObject(
-                                new DeleteObjectRequest(bucketName, fileToDelete));
-                    } catch (Exception e) {
-                        throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
+        try {
+            Bill fetchedBill = getBill(authHeader, bill_id);
+            if (fetchedBill != null) {
+                if (fetchedBill.getAttachment() != null) {
+                    if (!profile.equalsIgnoreCase("aws")) {
+                        File fileToDelete = fetchedBill.getAttachment();
+                        fileStorageService.deleteFile(fileToDelete.getUrl());
+                    } else {
+                        String fileToDelete = null;
+                        try {
+                            String fileLocation = fetchedBill.getAttachment().getUrl();
+                            fileToDelete = fileLocation.substring(fileLocation.lastIndexOf("/") + 1);
+                            s3client.deleteObject(
+                                    new DeleteObjectRequest(bucketName, fileToDelete));
+                        } catch (Exception e) {
+                            throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
+                        }
                     }
-                }
 
+                }
+                billRepo.delete(fetchedBill);
+            } else {
+                throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
             }
-            billRepo.delete(fetchedBill);
-        } else {
-            throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
+            return new ResponseEntity(HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            logger.error(commonUtil.stackTraceString(e));
+            throw e;
         }
-        return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 
 
@@ -214,9 +235,9 @@ public class BillServiceImpl implements BillService {
     public File saveAttachment(String auth, UUID bill_id, MultipartFile file)
             throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, FileStorageException, IOException, NoSuchAlgorithmException {
 
-        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
-        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
-            try {
+        try {
+            ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
+            if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
                 Bill fetchedBill = getBill(auth, bill_id);
                 if (fetchedBill != null) {
                     if (fetchedBill.getAttachment() == null) {
@@ -235,9 +256,9 @@ public class BillServiceImpl implements BillService {
                         String fileNewName = generateFileName(file);
 
                         if (!profile.equalsIgnoreCase("aws")) {
-//                            File newfile = fileRepository.save(f);
-//                            fetchedBill.setAttachment(f);
-//                            billRepo.save(fetchedBill);
+    //                            File newfile = fileRepository.save(f);
+    //                            fetchedBill.setAttachment(f);
+    //                            billRepo.save(fetchedBill);
                             Path targetLocation = Paths.get(f.getUrl());
                             byte[] fileBytes = file.getBytes();
                             Files.write(targetLocation, fileBytes);
@@ -258,22 +279,19 @@ public class BillServiceImpl implements BillService {
                             fetchedBill.setAttachment(f);
                             billRepo.save(fetchedBill);
                         }
-
                         return newfile;
-
                     } else {
                         throw new ValidationException("File already exists!");
                     }
                 } else {
                     throw new ValidationException("Bill does not exist!");
                 }
-
-            } catch (Exception e) {
-                logger.error(commonUtil.stackTraceString(e));
-                throw e;
+            } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
             }
-        } else {
-            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+        } catch (Exception e) {
+            logger.error(commonUtil.stackTraceString(e));
+            throw e;
         }
     }
 
@@ -281,9 +299,9 @@ public class BillServiceImpl implements BillService {
     public File getAttachment(String auth, UUID bill_id, UUID file_id)
             throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException {
 
-        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
-        if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
-            try {
+        try {
+            ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
+            if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
                 Bill fetchedBill = getBill(auth, bill_id);
                 if (fetchedBill != null) {
                     Optional <File> fileObj = fileRepository.findById(file_id);
@@ -297,27 +315,26 @@ public class BillServiceImpl implements BillService {
                         }
                     } else {
                             throw new ResourceNotFoundException("File not found with id: " + file_id);
-                        }
-                    } else {
+                    }
+                } else {
                     throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
                 }
-
-            } catch (Exception e) {
-                logger.error(commonUtil.stackTraceString(e));
-                throw e;
+            } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
             }
-        } else {
-            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
-            }
+        } catch (Exception e) {
+            logger.error(commonUtil.stackTraceString(e));
+            throw e;
+        }
     }
 
     @Override
     public void deleteAttachment(String auth, UUID bill_id, UUID file_id)
             throws ValidationException, UnAuthorizedLoginException, FileStorageException, ResourceNotFoundException {
 
-        ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
-        if (responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
-            try {
+        try {
+            ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
+            if (responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
                 Bill fetchedBill = getBill(auth, bill_id);
                 if (fetchedBill != null) {
                     Optional<File> fileObj = fileRepository.findById(file_id);
@@ -339,11 +356,9 @@ public class BillServiceImpl implements BillService {
                                     throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
                                 }
                             }
-
                             fetchedBill.setAttachment(null);
                             billRepo.save(fetchedBill);
                             fileRepository.deleteById(file_id);
-
                         } else {
                             throw new ResourceNotFoundException("File not found with id: " + file_id);
                         }
@@ -353,12 +368,12 @@ public class BillServiceImpl implements BillService {
                 } else {
                     throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
                 }
-            } catch (Exception e) {
-                logger.error(commonUtil.stackTraceString(e));
-                throw e;
+            } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
             }
-        } else {
-            throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+        } catch (Exception e) {
+            logger.error(commonUtil.stackTraceString(e));
+            throw e;
         }
     }
 
