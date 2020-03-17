@@ -3,10 +3,8 @@ os: linux
 files:
   - source: /webapp/target/ROOT.war
     destination: /opt/tomcat/webapps
-
   - source: /webapp/AmazonCloudWatch-config.json
     destination: /opt
-
 hooks:
   AfterInstall:
     - location: ./codedeploy/afterInstall.sh
