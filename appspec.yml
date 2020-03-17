@@ -1,9 +1,9 @@
 version: 0.0
 os: linux
 files:
-  - source: /webapp/target/ROOT.war
+  - source: /home/circleci/webapp/target/ROOT.war
     destination: /opt/tomcat/webapps
-  - source: /webapp/AmazonCloudWatch-config.json
+  - source: /AmazonCloudWatch-config.json
     destination: /opt
 hooks:
   AfterInstall:
