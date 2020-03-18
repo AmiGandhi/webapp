@@ -14,7 +14,8 @@ public class MetricsConfig {
 
     @Bean
     public StatsDClient statsDClient(@Value("${metrics.statsd.host:localhost}") String host,
-                                     @Value("${metrics.statsd.port:8125}") int port, @Value("${metrics.prefix:cloud-ninja}") String prefix) {
+                                     @Value("${metrics.statsd.port:8125}") int port,
+                                     @Value("${metrics.prefix:cloud}") String prefix) {
         return new NonBlockingStatsDClient(prefix, host, port);
     }
 

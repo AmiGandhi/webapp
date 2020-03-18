@@ -1,5 +1,6 @@
 package neu.csye6225.spring2020.cloud.service.impl;
 
+import com.timgroup.statsd.StatsDClient;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
 import neu.csye6225.spring2020.cloud.exception.ValidationException;
@@ -33,6 +34,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private CommonUtil commonUtil;
 
+    @Autowired
+    private StatsDClient statsDClient;
+
     private static final Logger logger = LogManager.getLogger(UserServiceImpl.class);
 
     @Override
@@ -65,7 +69,13 @@ public class UserServiceImpl implements UserService {
                 BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
                 String hashedPassword = passwordEncoder.encode(userBody.getPassword());
                 userBody.setPassword(hashedPassword);
+
+                long startTime = System.currentTimeMillis();
                 userRepo.save(userBody);
+                long endTime = System.currentTimeMillis();
+                long duration = (endTime - startTime);
+                statsDClient.recordExecutionTime("Execution time for creating the user in database:",duration);
+
             } else
             {
                 throw new ValidationException(EXISTING_EMAIL);
@@ -122,6 +132,7 @@ public class UserServiceImpl implements UserService {
                     }
                 }
 
+                long startTime = System.currentTimeMillis();
                 userRepo.findById(u.getId())
                         .map(u1 -> {
                             u1.setFirst_name(user.getFirst_name());
@@ -133,6 +144,9 @@ public class UserServiceImpl implements UserService {
                                 u1.setPassword(hashedPassword);
 
                             }
+                            long endTime = System.currentTimeMillis();
+                            long duration = (endTime - startTime);
+                            statsDClient.recordExecutionTime("Execution time for updating the user in database:",duration);
                             return userRepo.save(u1);
                         })
                         .orElseThrow(()-> new ResourceNotFoundException("User not found with email"+ u.getEmailAddress()));
