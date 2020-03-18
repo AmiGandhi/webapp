@@ -8,7 +8,7 @@ public class ApplicationConstants {
     public static final String AUTHORIZATION = "Authorization";
     public static final String BASIC = "Basic";
     public static final String CREATE_BILL = "/v1/bill";
-    public static final String GET_ALL_BILLS = "/v2/bills";
+    public static final String GET_ALL_BILLS = "/v1/bills";
 //    public static final String GET_ALL_BILLS_v2 = "/v2/bills";
     public static final String GET_BILL = "/v1/bill/{bill_id}";
     public static final String UPDATE_BILL = "/v1/bill/{bill_id}";
