@@ -209,7 +209,6 @@ public class BillServiceImpl implements BillService {
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
                 statsDClient.recordExecutionTime("UpdateBillInDatabase:",duration);
-                logger.info("Bill updated successfully!");
                 long end = System.currentTimeMillis();
                 long time = (end - start);
                 statsDClient.recordExecutionTime("UpdateBillApiCall",time);
@@ -313,22 +312,18 @@ public class BillServiceImpl implements BillService {
                             byte[] fileBytes = file.getBytes();
                             Files.write(targetLocation, fileBytes);
                         } else {
-                            try {
-                                long beginTime = System.currentTimeMillis();
-                                s3client = new AmazonS3Client();
-                                ObjectMetadata objectMeatadata = new ObjectMetadata();
-                                objectMeatadata.setContentType(file.getContentType());
-                                fileNewName = generateFileName(file);
-                                f.setUrl("https://" + bucketName + ".s3.amazonaws.com" + "/" + fileNewName);
-                                s3client.putObject(
-                                        new PutObjectRequest(bucketName, fileNewName, file.getInputStream(), objectMeatadata).withCannedAcl(CannedAccessControlList.Private));
-                                long lastTime = System.currentTimeMillis();
-                                long timeTaken = (lastTime - beginTime);
-                                statsDClient.recordExecutionTime("CreateAttachmentInS3Bucket:",timeTaken);
-                            } catch (Exception e) {
+                            long beginTime = System.currentTimeMillis();
+                            s3client = new AmazonS3Client();
+                            ObjectMetadata objectMeatadata = new ObjectMetadata();
+                            objectMeatadata.setContentType(file.getContentType());
+                            fileNewName = generateFileName(file);
+                            f.setUrl("https://" + bucketName + ".s3.amazonaws.com" + "/" + fileNewName);
+                            s3client.putObject(
+                                    new PutObjectRequest(bucketName, fileNewName, file.getInputStream(), objectMeatadata).withCannedAcl(CannedAccessControlList.Private));
+                            long lastTime = System.currentTimeMillis();
+                            long timeTaken = (lastTime - beginTime);
+                            statsDClient.recordExecutionTime("CreateAttachmentInS3Bucket:",timeTaken);
 
-                                throw new FileStorageException("File not stored in S3 bucket. File name: " + fileNewName+""+e);
-                            }
                             long startingTime = System.currentTimeMillis();
                             fileRepository.save(f);
                             fetchedBill.setAttachment(f);
