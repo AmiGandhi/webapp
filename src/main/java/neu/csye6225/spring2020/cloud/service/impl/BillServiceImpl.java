@@ -322,7 +322,7 @@ public class BillServiceImpl implements BillService {
                                         new PutObjectRequest(bucketName, fileNewName, file.getInputStream(), objectMeatadata).withCannedAcl(CannedAccessControlList.Private));
                                 long lastTime = System.currentTimeMillis();
                                 long timeTaken = (lastTime - beginTime);
-                                statsDClient.recordExecutionTime("CreateAttachmentInS3Bucket:",timeTaken);
+                                statsDClient.recordExecutionTime("CreateAttachmentInS3Bucket",timeTaken);
                             } catch (Exception e) {
 
                                 throw new FileStorageException("File not stored in S3 bucket. File name: " + fileNewName+""+e);
@@ -333,7 +333,7 @@ public class BillServiceImpl implements BillService {
                             billRepo.save(fetchedBill);
                             long endingTime = System.currentTimeMillis();
                             long timeElapsed = (endingTime - startingTime);
-                            statsDClient.recordExecutionTime("CreateAttachmentInDatabase:",timeElapsed);
+                            statsDClient.recordExecutionTime("CreateAttachmentInDatabase",timeElapsed);
                         }
                         long end = System.currentTimeMillis();
                         long time = (end - start);
