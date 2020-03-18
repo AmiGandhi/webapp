@@ -80,6 +80,8 @@ public class BillServiceImpl implements BillService {
     @Override
     public Bill createBill(String authHeader, Bill bill) throws ValidationException, UnAuthorizedLoginException {
 
+        statsDClient.incrementCounter("endpoint.bill.create.http.post");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
             if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
@@ -95,7 +97,11 @@ public class BillServiceImpl implements BillService {
                 Bill savedBill = billRepo.save(bill);
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
-                statsDClient.recordExecutionTime("Execution time to create the bill in database:",duration);
+                statsDClient.recordExecutionTime("CreatedBillInDatabase:",duration);
+                logger.info("Bill created successfully!");
+                long end = System.currentTimeMillis();
+                long time = (end - start);
+                statsDClient.recordExecutionTime("CreateBillApiCall",time);
                 logger.info("Bill created successfully!");
                 return savedBill;
             } else {
@@ -110,6 +116,8 @@ public class BillServiceImpl implements BillService {
     @Override
     public List<Bill> getAllBills(String authHeader) throws UnAuthorizedLoginException, ValidationException {
 
+        statsDClient.incrementCounter("endpoint.bill.getAll.http.get");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
             User u = (User) responseBody.getBody();
@@ -119,7 +127,12 @@ public class BillServiceImpl implements BillService {
                 List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
-                statsDClient.recordExecutionTime("Execution time to get all the bills from database:",duration);
+                statsDClient.recordExecutionTime("GetBillFromDatabase",duration);
+
+                long end = System.currentTimeMillis();
+                long time = (end - start);
+                statsDClient.recordExecutionTime("GetAllBillsApiCall",time);
+                logger.info("Found all bills successfully!");
                 return bill_list;
             } else {
                 throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
@@ -133,6 +146,8 @@ public class BillServiceImpl implements BillService {
     @Override
     public Bill getBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
 
+        statsDClient.incrementCounter("endpoint.bill.getOne.http.get");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
             if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
@@ -149,7 +164,11 @@ public class BillServiceImpl implements BillService {
                 }
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
-                statsDClient.recordExecutionTime("Execution time for getting the bill from database:",duration);
+                statsDClient.recordExecutionTime("GetOneBillFromDatabase",duration);
+                long end = System.currentTimeMillis();
+                long time = (end - start);
+                statsDClient.recordExecutionTime("GetOneBillApiCall",time);
+                logger.info("Found bill successfully!");
                 return b;
             } else {
                 throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
@@ -163,6 +182,8 @@ public class BillServiceImpl implements BillService {
     @Override
     public Bill updateBill(String authHeader, UUID bill_id, Bill bill) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
 
+        statsDClient.incrementCounter("endpoint.bill.update.http.put");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
             if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
@@ -188,7 +209,11 @@ public class BillServiceImpl implements BillService {
                 billRepo.save(savedBill);
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
-                statsDClient.recordExecutionTime("Execution time for updating the bill in database:",duration);
+                statsDClient.recordExecutionTime("UpdateBillInDatabase:",duration);
+                logger.info("Bill updated successfully!");
+                long end = System.currentTimeMillis();
+                long time = (end - start);
+                statsDClient.recordExecutionTime("UpdateBillApiCall",time);
                 logger.info("Bill updated successfully!");
                 return savedBill;
             } else {
@@ -203,6 +228,8 @@ public class BillServiceImpl implements BillService {
     @Override
     public ResponseEntity deleteBill(String authHeader, UUID bill_id) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException, FileStorageException {
 
+        statsDClient.incrementCounter("endpoint.bill.delete.http.delete");
+        long start = System.currentTimeMillis();
         try {
             Bill fetchedBill = getBill(authHeader, bill_id);
             if (fetchedBill != null) {
@@ -221,7 +248,7 @@ public class BillServiceImpl implements BillService {
                                     new DeleteObjectRequest(bucketName, fileToDelete));
                             long endTime = System.currentTimeMillis();
                             long duration = (endTime - startTime);
-                            statsDClient.recordExecutionTime("Execution time for deleting the bill from S3 bucket:",duration);
+                            statsDClient.recordExecutionTime("DeleteBillFromS3Bucket:",duration);
                         } catch (Exception e) {
                             throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
                         }
@@ -232,10 +259,14 @@ public class BillServiceImpl implements BillService {
                 billRepo.delete(fetchedBill);
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
-                statsDClient.recordExecutionTime("Execution time for deleting the bill from database:",duration);
+                statsDClient.recordExecutionTime("DeleteBillFromDatabase",duration);
             } else {
                 throw new ResourceNotFoundException("Bill not found with id: " + bill_id);
             }
+            long end = System.currentTimeMillis();
+            long time = (end - start);
+            statsDClient.recordExecutionTime("DeleteBillApiCall",time);
+            logger.info("Bill deleted successfully!");
             return new ResponseEntity(HttpStatus.NO_CONTENT);
         } catch (Exception e) {
             logger.error(commonUtil.stackTraceString(e));
@@ -249,6 +280,8 @@ public class BillServiceImpl implements BillService {
     public File saveAttachment(String auth, UUID bill_id, MultipartFile file)
             throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, FileStorageException, IOException, NoSuchAlgorithmException {
 
+        statsDClient.incrementCounter("endpoint.file.create.http.post");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
             if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
@@ -268,7 +301,7 @@ public class BillServiceImpl implements BillService {
                         billRepo.save(fetchedBill);
                         long endTime = System.currentTimeMillis();
                         long duration = (endTime - startTime);
-                        statsDClient.recordExecutionTime("Execution time for saving the file in database:",duration);
+                        statsDClient.recordExecutionTime("CreateAttachmentInDatabase",duration);
 
                         // new file to store in s3
                         String fileNewName = generateFileName(file);
@@ -292,7 +325,7 @@ public class BillServiceImpl implements BillService {
                                         new PutObjectRequest(bucketName, fileNewName, file.getInputStream(), objectMeatadata).withCannedAcl(CannedAccessControlList.Private));
                                 long endingTime = System.currentTimeMillis();
                                 long timeElapsed = (endingTime - startingTime);
-                                statsDClient.recordExecutionTime("Execution time for saving the file in S3 Bucket:",timeElapsed);
+                                statsDClient.recordExecutionTime("CreateAttachmentInS3Bucket:",timeElapsed);
                             } catch (Exception e) {
 
                                 throw new FileStorageException("File not stored in S3 bucket. File name: " + fileNewName+""+e);
@@ -303,8 +336,12 @@ public class BillServiceImpl implements BillService {
                             billRepo.save(fetchedBill);
                             long endingTime = System.currentTimeMillis();
                             long timeElapsed = (endingTime - startingTime);
-                            statsDClient.recordExecutionTime("Execution time for saving the file in database:",timeElapsed);
+                            statsDClient.recordExecutionTime("CreateAttachmentInDatabase:",timeElapsed);
                         }
+                        long end = System.currentTimeMillis();
+                        long time = (end - start);
+                        statsDClient.recordExecutionTime("CreateAttachmentApiCall",time);
+                        logger.info("Attachment created successfully!");
                         return newfile;
                     } else {
                         throw new ValidationException("File already exists!");
@@ -325,6 +362,8 @@ public class BillServiceImpl implements BillService {
     public File getAttachment(String auth, UUID bill_id, UUID file_id)
             throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException {
 
+        statsDClient.incrementCounter("endpoint.file.get.http.get");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
             if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
@@ -338,7 +377,11 @@ public class BillServiceImpl implements BillService {
                         if (dbfile != null && dbfile.equals(file)) {
                             long endTime = System.currentTimeMillis();
                             long duration = (endTime - startTime);
-                            statsDClient.recordExecutionTime("Execution time for finding the file from database:",duration);
+                            statsDClient.recordExecutionTime("GetAttachmentFromDatabase:",duration);
+                            long end = System.currentTimeMillis();
+                            long time = (end - start);
+                            statsDClient.recordExecutionTime("GetAttachmentApiCall",time);
+                            logger.info("Attachment found!");
                             return file;
                         } else {
                             throw new ResourceNotFoundException("File not found with id: " + file_id);
@@ -362,6 +405,8 @@ public class BillServiceImpl implements BillService {
     public void deleteAttachment(String auth, UUID bill_id, UUID file_id)
             throws ValidationException, UnAuthorizedLoginException, FileStorageException, ResourceNotFoundException {
 
+        statsDClient.incrementCounter("endpoint.file.delete.http.delete");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(auth);
             if (responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
@@ -385,7 +430,7 @@ public class BillServiceImpl implements BillService {
                                             new DeleteObjectRequest(bucketName, fileToDelete));
                                     long endTime = System.currentTimeMillis();
                                     long duration = (endTime - startTime);
-                                    statsDClient.recordExecutionTime("Execution time to delete file from s3 bucket:",duration);
+                                    statsDClient.recordExecutionTime("DeleteAttachmentFromS3Bucket:",duration);
                                 } catch (Exception e) {
                                     throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
                                 }
@@ -396,8 +441,11 @@ public class BillServiceImpl implements BillService {
                             fileRepository.deleteById(file_id);
                             long endTime = System.currentTimeMillis();
                             long duration = (endTime - startTime);
-                            statsDClient.recordExecutionTime("Execution time to delete file from database:",duration);
-
+                            statsDClient.recordExecutionTime("DeleteAttachmentFromDatabase",duration);
+                            long end = System.currentTimeMillis();
+                            long time = (end - start);
+                            statsDClient.recordExecutionTime("DeleteAttachmentApiCall",time);
+                            logger.info("Attachment deleted successfully!");
                         } else {
                             throw new ResourceNotFoundException("File not found with id: " + file_id);
                         }

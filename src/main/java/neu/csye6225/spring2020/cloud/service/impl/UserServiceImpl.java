@@ -42,6 +42,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public User createUser(User userBody) throws ValidationException {
 
+        statsDClient.incrementCounter("endpoint.user.create.http.post");
+        long start = System.currentTimeMillis();
         try {
             if(userBody.getEmailAddress()== null|| userBody.getFirst_name()==null|| userBody.getLast_name()==null|| userBody.getPassword()==null)
             {
@@ -74,12 +76,15 @@ public class UserServiceImpl implements UserService {
                 userRepo.save(userBody);
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
-                statsDClient.recordExecutionTime("Execution time for creating the user in database:",duration);
+                statsDClient.recordExecutionTime("CreatedUserInDatabase",duration);
 
             } else
             {
                 throw new ValidationException(EXISTING_EMAIL);
             }
+            long end = System.currentTimeMillis();
+            long duration = (end - start);
+            statsDClient.recordExecutionTime("CreateUserApiCall",duration);
             logger.info("User created successfully!");
             return userBody;
 
@@ -91,11 +96,17 @@ public class UserServiceImpl implements UserService {
 
     public User getUser(String authHeader) throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
 
+        statsDClient.incrementCounter("endpoint.user.get.http.get");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
             if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
             {
                 User u = (User) responseBody.getBody();
+                long end = System.currentTimeMillis();
+                long duration = (end - start);
+                statsDClient.recordExecutionTime("GetUserApiCall",duration);
+                logger.info("Found user successfully!");
                 return u;
             }
             throw new ResourceNotFoundException(INVALID_CREDENTIALS);
@@ -107,6 +118,8 @@ public class UserServiceImpl implements UserService {
 
     public ResponseEntity updateUser(String authHeader, User user) throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException {
 
+        statsDClient.incrementCounter("endpoint.user.update.http.put");
+        long start = System.currentTimeMillis();
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
             User u = (User) responseBody.getBody();
@@ -146,13 +159,16 @@ public class UserServiceImpl implements UserService {
                             }
                             long endTime = System.currentTimeMillis();
                             long duration = (endTime - startTime);
-                            statsDClient.recordExecutionTime("Execution time for updating the user in database:",duration);
+                            statsDClient.recordExecutionTime("UpdatedUserInDatabase",duration);
                             return userRepo.save(u1);
                         })
                         .orElseThrow(()-> new ResourceNotFoundException("User not found with email"+ u.getEmailAddress()));
             } else {
                 throw new ResourceNotFoundException(INVALID_CREDENTIALS);
             }
+            long end = System.currentTimeMillis();
+            long duration = (end - start);
+            statsDClient.recordExecutionTime("UpdateUserApiCall",duration);
             logger.info("User updated successfully!");
             return new ResponseEntity(HttpStatus.NO_CONTENT);
 
