@@ -98,7 +98,6 @@ public class BillServiceImpl implements BillService {
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
                 statsDClient.recordExecutionTime("CreatedBillInDatabase:",duration);
-                logger.info("Bill created successfully!");
                 long end = System.currentTimeMillis();
                 long time = (end - start);
                 statsDClient.recordExecutionTime("CreateBillApiCall",time);
@@ -243,12 +242,12 @@ public class BillServiceImpl implements BillService {
                             String fileLocation = fetchedBill.getAttachment().getUrl();
                             fileToDelete = fileLocation.substring(fileLocation.lastIndexOf("/") + 1);
 
-                            long startTime = System.currentTimeMillis();
+                            long begin = System.currentTimeMillis();
                             s3client.deleteObject(
                                     new DeleteObjectRequest(bucketName, fileToDelete));
-                            long endTime = System.currentTimeMillis();
-                            long duration = (endTime - startTime);
-                            statsDClient.recordExecutionTime("DeleteBillFromS3Bucket:",duration);
+                            long terminate = System.currentTimeMillis();
+                            long latency = (terminate - begin);
+                            statsDClient.recordExecutionTime("DeleteBillFromS3Bucket:",latency);
                         } catch (Exception e) {
                             throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
                         }
@@ -315,7 +314,7 @@ public class BillServiceImpl implements BillService {
                             Files.write(targetLocation, fileBytes);
                         } else {
                             try {
-                                long startingTime = System.currentTimeMillis();
+                                long beginTime = System.currentTimeMillis();
                                 s3client = new AmazonS3Client();
                                 ObjectMetadata objectMeatadata = new ObjectMetadata();
                                 objectMeatadata.setContentType(file.getContentType());
@@ -323,9 +322,9 @@ public class BillServiceImpl implements BillService {
                                 f.setUrl("https://" + bucketName + ".s3.amazonaws.com" + "/" + fileNewName);
                                 s3client.putObject(
                                         new PutObjectRequest(bucketName, fileNewName, file.getInputStream(), objectMeatadata).withCannedAcl(CannedAccessControlList.Private));
-                                long endingTime = System.currentTimeMillis();
-                                long timeElapsed = (endingTime - startingTime);
-                                statsDClient.recordExecutionTime("CreateAttachmentInS3Bucket:",timeElapsed);
+                                long lastTime = System.currentTimeMillis();
+                                long timeTaken = (lastTime - beginTime);
+                                statsDClient.recordExecutionTime("CreateAttachmentInS3Bucket:",timeTaken);
                             } catch (Exception e) {
 
                                 throw new FileStorageException("File not stored in S3 bucket. File name: " + fileNewName+""+e);
@@ -423,14 +422,14 @@ public class BillServiceImpl implements BillService {
                             } else {
                                 String fileToDelete = null;
                                 try {
-                                    long startTime = System.currentTimeMillis();
+                                    long begin = System.currentTimeMillis();
                                     String fileLocation = dbfile.getUrl();
                                     fileToDelete = fileLocation.substring(fileLocation.lastIndexOf("/") + 1);
                                     s3client.deleteObject(
                                             new DeleteObjectRequest(bucketName, fileToDelete));
-                                    long endTime = System.currentTimeMillis();
-                                    long duration = (endTime - startTime);
-                                    statsDClient.recordExecutionTime("DeleteAttachmentFromS3Bucket:",duration);
+                                    long terminate = System.currentTimeMillis();
+                                    long timeTaken = (terminate - begin);
+                                    statsDClient.recordExecutionTime("DeleteAttachmentFromS3Bucket:",timeTaken);
                                 } catch (Exception e) {
                                     throw new FileStorageException("File not stored in S3 bucket. File name: " + fileToDelete);
                                 }
