@@ -46,8 +46,9 @@ public class EntryController {
 
     @RequestMapping(value = HEALTH_CHECK, method = RequestMethod.GET)
     @ResponseStatus(HttpStatus.OK)
-    public void healthCheck() {
+    public String healthCheck() {
         logger.info("Health check successful!!");
+        return "***************Welcome to my cloud project!!***************";
     }
 
     //user
