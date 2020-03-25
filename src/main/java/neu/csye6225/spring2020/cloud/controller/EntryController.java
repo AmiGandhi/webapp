@@ -13,6 +13,8 @@ import neu.csye6225.spring2020.cloud.service.BillService;
 import neu.csye6225.spring2020.cloud.service.FileStorageService;
 import neu.csye6225.spring2020.cloud.service.UserService;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,6 +41,14 @@ public class EntryController {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    private static final Logger logger = LogManager.getLogger(EntryController.class);
+
+    @RequestMapping(value = HEALTH_CHECK, method = RequestMethod.GET)
+    @ResponseStatus(HttpStatus.OK)
+    public void healthCheck() {
+        logger.info("Health check successful!!");
+    }
 
     //user
     @RequestMapping( method = RequestMethod.POST, value=REGISTER, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -82,14 +92,6 @@ public class EntryController {
             throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
         return new ResponseEntity<List<Bill>>(billService.getAllBills(header), HttpStatus.OK);
     }
-
-//    // similar call as above with different Request mapping
-//    @RequestMapping(method = RequestMethod.GET, value = GET_ALL_BILLS_v2, produces = MediaType.APPLICATION_JSON_VALUE)
-//    @ResponseBody
-//    public ResponseEntity<List<Bill>> getAllBillsAgain(@RequestHeader(AUTHORIZATION) String header)
-//            throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException {
-//        return new ResponseEntity<List<Bill>>(billService.getAllBills(header), HttpStatus.OK);
-//    }
 
     @RequestMapping(method = RequestMethod.GET, value = GET_BILL, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
