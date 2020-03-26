@@ -16,7 +16,7 @@
         <collectionProp name="AuthManager.auth_list">
           <elementProp name="" elementType="Authorization">
             <stringProp name="Authorization.url">http://prod.amigandhi.me/v1/bill</stringProp>
-            <stringProp name="Authorization.username">amigandhi@gmail.com</stringProp>
+            <stringProp name="Authorization.username">amigandhi2703@gmail.com</stringProp>
             <stringProp name="Authorization.password">Amigandhi@123</stringProp>
             <stringProp name="Authorization.domain"></stringProp>
             <stringProp name="Authorization.realm"></stringProp>
