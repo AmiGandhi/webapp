@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.io.IOException;
+import java.rmi.ServerException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.UUID;
@@ -22,9 +23,6 @@ public interface BillService {
 
     List<Bill> getAllBills(String authHeader)
             throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException;
-
-//    List<Bill> getAllBillsAgain(String authHeader)
-//            throws UnAuthorizedLoginException, ResourceNotFoundException, ValidationException;
 
     Bill getBill(String authHeader, UUID bill_id)
             throws ValidationException, ResourceNotFoundException, UnAuthorizedLoginException;
@@ -44,5 +42,9 @@ public interface BillService {
 
     public void deleteAttachment(String auth, UUID bill_id, UUID file_id)
             throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, FileStorageException;
+
+    // service to post bills to SNS topic and trigger lambda function
+    public List<Bill> getDueBills(String authHeader, Integer x_days)
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException;
 
 }

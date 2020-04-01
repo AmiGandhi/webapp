@@ -6,7 +6,11 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import neu.csye6225.spring2020.cloud.aws.SNSClient;
 import com.timgroup.statsd.StatsDClient;
+import neu.csye6225.spring2020.cloud.aws.SQSClient;
 import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
@@ -33,7 +37,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.rmi.ServerException;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,6 +75,15 @@ public class BillServiceImpl implements BillService {
 
     @Autowired
     private StatsDClient statsDClient;
+
+    @Autowired
+    private SNSClient awssnsClient;
+
+    @Autowired
+    private ObjectMapper mapper;
+
+    @Autowired
+    private SQSClient awssqsClient;
 
     @Value("${spring.profiles.active}")
     private String profile;
@@ -455,6 +470,70 @@ public class BillServiceImpl implements BillService {
             } else {
                 throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
             }
+        } catch (Exception e) {
+            logger.error(commonUtil.stackTraceString(e));
+            throw e;
+        }
+    }
+
+    // service to post bills to SNS topic and trigger lambda function
+    @Override
+    public List<Bill> getDueBills(String authHeader, Integer x_days)
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException {
+
+        statsDClient.incrementCounter("endpoint.bill.getDue.http.get");
+        long start = System.currentTimeMillis();
+        try {
+            ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
+            User u = (User) responseBody.getBody();
+            if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
+            {
+                LocalDate startDate = LocalDate.now();
+                java.util.Date dateToday = java.sql.Date.valueOf(startDate);
+                LocalDate date =  LocalDate.now().plusDays(Integer.parseInt(String.valueOf(x_days)));
+                java.util.Date endDate = java.sql.Date.valueOf(date);
+
+                long startTime = System.currentTimeMillis();
+//                List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
+                List<Bill> bill_list = billRepo.findAllByDueDateLessThanEqualAndEndDateGreaterThanEqual(endDate, dateToday);
+                long endTime = System.currentTimeMillis();
+                long duration = (endTime - startTime);
+                statsDClient.recordExecutionTime("GetDueBillsFromDatabase",duration);
+
+                if (bill_list.isEmpty()) {
+                    throw new ResourceNotFoundException("There are no bills for the user");
+                }
+
+                // create long polling SQS Queue
+                // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-long-polling-for-queue.html
+                // or
+                // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues-getting-started-java.html
+
+                awssqsClient.createSQSQueue();
+
+
+                //Call the SNS Topic to trigger the lambda function
+                String messageId = "";
+                try{
+                    messageId =  awssnsClient.publishToTopic(mapper.writeValueAsString(bill_list));
+                } catch (JsonProcessingException jsonParsingException) {
+                    logger.error("Unable to parse the request json", jsonParsingException);
+                    throw new ServerException("Unable to parse the request json", jsonParsingException);
+                }
+
+                logger.info("Message ID : " + messageId);
+
+                long end = System.currentTimeMillis();
+                long time = (end - start);
+                statsDClient.recordExecutionTime("GetDueBillsApiCall",time);
+
+                logger.info("Found due bills successfully!");
+                return bill_list;
+
+            } else {
+                throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);
+            }
+
         } catch (Exception e) {
             logger.error(commonUtil.stackTraceString(e));
             throw e;
