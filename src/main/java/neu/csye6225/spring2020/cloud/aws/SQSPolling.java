@@ -3,6 +3,7 @@ package neu.csye6225.spring2020.cloud.aws;
 import java.util.Collections;
 import java.util.List;
 
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +22,6 @@ public class SQSPolling extends Thread {
     String queueUrl;
 
     @Autowired
-    private SQSClient sqsClient;
-
-    @Autowired
     private SNSClient snsClient;
 
     @Value("${AWS_TOPIC_NAME}")
@@ -31,9 +29,9 @@ public class SQSPolling extends Thread {
 
     private static final Logger logger = LoggerFactory.getLogger(SQSPolling.class);
 
-    public SQSPolling(SQSClient sqs, String queueUrl) {
+    public SQSPolling(AmazonSQS sqs, String queueUrl) {
         // TODO Auto-generated constructor stub
-        this.sqs = (AmazonSQS) sqsClient;
+        this.sqs = sqs;
         this.queueUrl = queueUrl;
 
     }
