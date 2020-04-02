@@ -40,16 +40,17 @@ public class SQSPolling extends Thread {
         while(true) {
 
             logger.info("Polling started...");
-            final ReceiveMessageRequest receive_request =new ReceiveMessageRequest()
+            final ReceiveMessageRequest receive_request = new ReceiveMessageRequest()
                     .withQueueUrl(queueUrl)
                     .withWaitTimeSeconds(20);
             logger.info("Message request recieved...");
 
             List<Message> result =  Collections.synchronizedList(sqs.receiveMessage(receive_request).getMessages());
-            logger.info("Messages recieved...");
+            logger.info("Messages recieved..." + result.size());
 
             for (Message message : result) {
 
+                logger.info("Entered the for loop to publish messages!");
                 snsClient.publishToTopic(message.getBody());
                 logger.info("Message published to topic successfully!");
 
