@@ -546,7 +546,6 @@ public class BillServiceImpl implements BillService {
                         throw new ServerException("Unable to parse the request json", jsonParsingException);
                     }
 
-
                     SQSPolling myThread = new SQSPolling(sqsClient, awssqsClient.getQueueUrl());
                     myThread.start();
 
