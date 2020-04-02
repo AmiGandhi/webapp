@@ -515,7 +515,7 @@ public class BillServiceImpl implements BillService {
                     }
                 }
 
-                if (!profile.equalsIgnoreCase("aws")) {
+                if (profile.equalsIgnoreCase("aws")) {
 
                     awssqsClient.publishToQueue("Hello");
                     // create long polling SQS Queue
