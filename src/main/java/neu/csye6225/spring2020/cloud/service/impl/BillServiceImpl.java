@@ -1,5 +1,6 @@
 package neu.csye6225.spring2020.cloud.service.impl;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -7,6 +8,10 @@ import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.AmazonSQSException;
+import com.amazonaws.services.sqs.model.CreateQueueRequest;
+import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -75,20 +80,16 @@ public class BillServiceImpl implements BillService {
     private StatsDClient statsDClient;
 
     @Autowired
-    private SNSClient awssnsClient;
-
-    @Autowired
     private ObjectMapper mapper;
-
-    @Autowired
-    private SQSClient awssqsClient;
-
-    private AmazonSQS sqsClient;
 
     @Value("${spring.profiles.active}")
     private String profile;
     @Value("${amazonProperties.bucketName}")
     private String bucketName;
+    @Value("${amazonProperties.clientRegion}")
+    private String clientRegion;
+    @Value("${sqs.queue.name}")
+    private String queueName;
 
     private static final Logger logger = LogManager.getLogger(BillServiceImpl.class);
 
@@ -479,7 +480,7 @@ public class BillServiceImpl implements BillService {
     // service to post bills to SNS topic and trigger lambda function
     @Override
     public List<Bill> getDueBills(String authHeader, Integer x_days)
-            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException {
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException, JsonProcessingException {
 
         statsDClient.incrementCounter("endpoint.bill.getDue.http.get");
         long start = System.currentTimeMillis();
@@ -493,7 +494,6 @@ public class BillServiceImpl implements BillService {
 
                 long startTime = System.currentTimeMillis();
                 List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
-//                List<Bill> bill_list = billRepo.findAllByDueDateLessThanEqualAndEndDateGreaterThanEqual(endDate, dateToday);
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
                 statsDClient.recordExecutionTime("GetDueBillsFromDatabase",duration);
@@ -539,14 +539,42 @@ public class BillServiceImpl implements BillService {
                     dueBill.setEmail(recipientEmail);
                     dueBill.setDueBillIdList(dueBillIds);
 
-                    try{
-                        awssqsClient.publishToQueue(mapper.writeValueAsString(dueBill));
-                    } catch (JsonProcessingException jsonParsingException) {
-                        logger.error("Unable to parse the request json", jsonParsingException);
-                        throw new ServerException("Unable to parse the request json", jsonParsingException);
+
+                    CreateQueueRequest create_request = new CreateQueueRequest(queueName)
+                            .addAttributesEntry("DelaySeconds", "60")
+                            .addAttributesEntry("MessageRetentionPeriod", "86400");
+
+                    AmazonSQS sqs = AmazonSQSClientBuilder.standard()
+                            .withRegion(clientRegion)
+                            .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+                            .build();
+
+                    try {
+                        sqs.createQueue(create_request);
+                    } catch (AmazonSQSException e) {
+                        if (!e.getErrorCode().equals("QueueAlreadyExists")) {
+                            throw e;
+                        }
                     }
 
-                    SQSPolling myThread = new SQSPolling(sqsClient, awssqsClient.getQueueUrl());
+                    String queueURL = sqs.getQueueUrl(queueName).getQueueUrl();
+
+                    SendMessageRequest msg_req = new SendMessageRequest()
+                            .withQueueUrl(queueURL)
+                            .withMessageBody(mapper.writeValueAsString(dueBill))
+                            .withDelaySeconds(5);
+
+                    sqs.sendMessage(msg_req);
+
+//                    // public to queue
+//                    try{
+//                        awssqsClient.publishToQueue(mapper.writeValueAsString(dueBill));
+//                    } catch (JsonProcessingException jsonParsingException) {
+//                        logger.error("Unable to parse the request json", jsonParsingException);
+//                        throw new ServerException("Unable to parse the request json", jsonParsingException);
+//                    }
+
+                    SQSPolling myThread = new SQSPolling(sqs, queueURL);
                     myThread.start();
 
                 }
