@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import neu.csye6225.spring2020.cloud.aws.SNSClient;
 import com.timgroup.statsd.StatsDClient;
 import neu.csye6225.spring2020.cloud.aws.SQSClient;
@@ -40,9 +41,7 @@ import java.nio.file.Paths;
 import java.rmi.ServerException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -486,16 +485,14 @@ public class BillServiceImpl implements BillService {
         try {
             ResponseEntity responseBody = authServiceImpl.checkIfUserExists(authHeader);
             User u = (User) responseBody.getBody();
+            String recipientEmail = u.getEmailAddress();
+
             if(responseBody.getStatusCode().equals(HttpStatus.NO_CONTENT))
             {
-                LocalDate startDate = LocalDate.now();
-                java.util.Date dateToday = java.sql.Date.valueOf(startDate);
-                LocalDate date =  LocalDate.now().plusDays(Integer.parseInt(String.valueOf(x_days)));
-                java.util.Date endDate = java.sql.Date.valueOf(date);
 
                 long startTime = System.currentTimeMillis();
-//                List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
-                List<Bill> bill_list = billRepo.findAllByDueDateLessThanEqualAndEndDateGreaterThanEqual(endDate, dateToday);
+                List<Bill> bill_list = billRepo.findBillsForAUser(u.getId());
+//                List<Bill> bill_list = billRepo.findAllByDueDateLessThanEqualAndEndDateGreaterThanEqual(endDate, dateToday);
                 long endTime = System.currentTimeMillis();
                 long duration = (endTime - startTime);
                 statsDClient.recordExecutionTime("GetDueBillsFromDatabase",duration);
@@ -504,31 +501,61 @@ public class BillServiceImpl implements BillService {
                     throw new ResourceNotFoundException("There are no bills for the user");
                 }
 
-                // create long polling SQS Queue
-                // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-long-polling-for-queue.html
-                // or
-                // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues-getting-started-java.html
+                LocalDate startDate = LocalDate.now();
+                java.util.Date currentDate = java.sql.Date.valueOf(startDate);
+//                LocalDate date =  LocalDate.now().plusDays(Integer.parseInt(String.valueOf(x_days)));
+                LocalDate dueDate =  LocalDate.now().plusDays(x_days);
+                java.util.Date endDate = java.sql.Date.valueOf(dueDate);
 
-                awssqsClient.createSQSQueue();
-
-
-                //Call the SNS Topic to trigger the lambda function
-                String messageId = "";
-                try{
-                    messageId =  awssnsClient.publishToTopic(mapper.writeValueAsString(bill_list));
-                } catch (JsonProcessingException jsonParsingException) {
-                    logger.error("Unable to parse the request json", jsonParsingException);
-                    throw new ServerException("Unable to parse the request json", jsonParsingException);
+                List<Bill> dueBillList = new ArrayList<Bill>();
+                for (Bill bill : bill_list) {
+                    Date billDueDate = bill.getDueDate();
+                    if (billDueDate.compareTo(currentDate) == 0 || billDueDate.after(currentDate) && billDueDate.before(endDate)) {
+                        dueBillList.add(bill);
+                    }
                 }
 
-                logger.info("Message ID : " + messageId);
+                if (!profile.equalsIgnoreCase("aws")) {
+
+                    awssqsClient.publishToQueue("Hello");
+                    // create long polling SQS Queue
+                    // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-long-polling-for-queue.html
+                    // or
+                    // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues-getting-started-java.html
+                    // awssqsClient.createSQSQueue();
+
+//                    String messageId = "";
+//                    mapper.enable(SerializationFeature.INDENT_OUTPUT);
+//                    Map<String, List<Bill>> objMap = new HashMap<>();
+//                    objMap.put(recipientEmail, dueBillList);
+//
+//                    try{
+//                        awssqsClient.publishToQueue(mapper.writeValueAsString(objMap));
+//                    } catch (JsonProcessingException jsonParsingException) {
+//                        logger.error("Unable to parse the request json", jsonParsingException);
+//                        throw new ServerException("Unable to parse the request json", jsonParsingException);
+//                    }
+
+//                    // Call the SNS Topic to trigger the lambda function
+//                    try{
+//                        messageId =  awssnsClient.publishToTopic(mapper.writeValueAsString(objMap));
+//                    } catch (JsonProcessingException jsonParsingException) {
+//                        logger.error("Unable to parse the request json", jsonParsingException);
+//                        throw new ServerException("Unable to parse the request json", jsonParsingException);
+//                    }
+//
+//                    logger.info("Message ID : " + messageId);
+
+                }
+
+
 
                 long end = System.currentTimeMillis();
                 long time = (end - start);
                 statsDClient.recordExecutionTime("GetDueBillsApiCall",time);
 
                 logger.info("Found due bills successfully!");
-                return bill_list;
+                return dueBillList;
 
             } else {
                 throw new UnAuthorizedLoginException(INVALID_CREDENTIALS);

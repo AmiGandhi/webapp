@@ -23,6 +23,6 @@ public interface BillRepository extends JpaRepository<Bill, UUID> {
 
     public void deleteById(UUID id);
 
-    public List<Bill> findAllByDueDateLessThanEqualAndEndDateGreaterThanEqual(Date endDate, Date startDate);
+//    public List<Bill> findAllByDueDateLessThanEqualAndEndDateGreaterThanEqual(Date endDate, Date startDate);
 
 }

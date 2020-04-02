@@ -154,7 +154,7 @@ public class EntryController {
 
 
     //endpoint for triggering lambda function
-    @RequestMapping(value = GET_DUE_BILLS, method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = GET_DUE_BILLS, method = RequestMethod.GET)
     public ResponseEntity<List<Bill>> getDueBills(@RequestHeader(value = AUTHORIZATION) String authHeader,
                                                   @PathVariable(value = "x_days") Integer x_days)
             throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException {

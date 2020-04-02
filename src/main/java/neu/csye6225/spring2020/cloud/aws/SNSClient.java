@@ -16,8 +16,8 @@ public class SNSClient {
 
     private AmazonSNS snsClient;
 
-    @Value("${topic.arn}")
-    private String topicARN;
+    @Value("${aws.topic.name}")
+    private String topicName;
 
     @Value("${amazonProperties.clientRegion}")
     private String clientRegion;
@@ -32,7 +32,7 @@ public class SNSClient {
 
     public String publishToTopic(String msg) {
 
-        PublishRequest publishRequest = new PublishRequest(topicARN, msg);
+        PublishRequest publishRequest = new PublishRequest(topicName, msg);
         PublishResult publishResponse = snsClient.publish(publishRequest);
         return publishResponse.getMessageId();
 
