@@ -20,9 +20,6 @@ public class SNSClient {
 
     private AmazonSNS snsClient;
 
-    @Value("${aws.topic.name}")
-    private String topicName;
-
     @Value("${amazonProperties.clientRegion}")
     private String clientRegion;
 
