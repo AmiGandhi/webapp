@@ -43,10 +43,11 @@ public class SQSPolling extends Thread {
             final ReceiveMessageRequest receive_request =new ReceiveMessageRequest()
                     .withQueueUrl(queueUrl)
                     .withWaitTimeSeconds(20);
-
+            logger.info("Message request recieved...");
             List<Message> result =  Collections.synchronizedList(sqs.receiveMessage(receive_request).getMessages());
+            logger.info("List of messages recieved..."+ result.size());
             for (Message message : result) {
-
+                logger.info("Inside for loop to publish each message to topic");
                 CreateTopicRequest topicReq = new CreateTopicRequest("csye6225-sns-topic");
                 AmazonSNSClient snsClient =  new AmazonSNSClient();
                 CreateTopicResult topicRes = snsClient.createTopic(topicReq);
@@ -54,14 +55,16 @@ public class SQSPolling extends Thread {
                 PublishResult publishResult = snsClient.publish(publishReq);
                 System.out.println(publishResult.getMessageId());
                 logger.info(publishResult.getMessageId());
+                sqs.deleteMessage(queueUrl, message.getReceiptHandle());
+                logger.info("deleting message from queue)");
             }
-            sqs.deleteQueue(queueUrl);
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         }
     }
 
