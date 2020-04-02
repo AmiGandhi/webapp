@@ -45,7 +45,7 @@ public class SQSClient {
         SendMessageRequest request = new SendMessageRequest()
                 .withQueueUrl(queueUrl)
                 .withMessageBody(msg)
-                .withDelaySeconds(5);
+                .withDelaySeconds(0);
 
         sqsClient.sendMessage(request);
 

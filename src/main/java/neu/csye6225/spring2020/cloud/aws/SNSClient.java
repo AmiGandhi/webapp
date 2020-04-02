@@ -5,11 +5,13 @@ import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
+import com.amazonaws.services.sns.model.Topic;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
 
 @Service
 public class SNSClient {
@@ -30,11 +32,20 @@ public class SNSClient {
                 .build();
    }
 
-    public String publishToTopic(String msg) {
 
-        PublishRequest publishRequest = new PublishRequest(topicName, msg);
-        PublishResult publishResponse = snsClient.publish(publishRequest);
-        return publishResponse.getMessageId();
+    public void publishToTopic(String msg) {
+
+        List<Topic> topics = snsClient.listTopics().getTopics();
+        for(Topic topic: topics)
+        {
+            if(topic.getTopicArn().endsWith("csye6225-sns-topic")) {
+
+                PublishRequest req = new PublishRequest(topic.getTopicArn(),msg);
+                snsClient.publish(req);
+                break;
+            }
+        }
+
 
     }
 
