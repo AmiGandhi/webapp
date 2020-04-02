@@ -83,6 +83,8 @@ public class BillServiceImpl implements BillService {
     @Autowired
     private SQSClient awssqsClient;
 
+    private AmazonSQS sqsClient;
+
     @Value("${spring.profiles.active}")
     private String profile;
     @Value("${amazonProperties.bucketName}")
@@ -545,7 +547,7 @@ public class BillServiceImpl implements BillService {
                     }
 
 
-                    SQSPolling myThread = new SQSPolling((AmazonSQS) awssqsClient, awssqsClient.getQueueUrl());
+                    SQSPolling myThread = new SQSPolling(sqsClient, awssqsClient.getQueueUrl());
                     myThread.start();
 
                 }
