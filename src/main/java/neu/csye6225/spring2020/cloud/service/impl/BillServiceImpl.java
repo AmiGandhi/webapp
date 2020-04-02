@@ -16,10 +16,7 @@ import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
 import neu.csye6225.spring2020.cloud.exception.ValidationException;
-import neu.csye6225.spring2020.cloud.model.Bill;
-import neu.csye6225.spring2020.cloud.model.File;
-import neu.csye6225.spring2020.cloud.model.PaymentStatusType;
-import neu.csye6225.spring2020.cloud.model.User;
+import neu.csye6225.spring2020.cloud.model.*;
 import neu.csye6225.spring2020.cloud.repository.BillRepository;
 import neu.csye6225.spring2020.cloud.repository.FileRepository;
 import neu.csye6225.spring2020.cloud.service.BillService;
@@ -530,13 +527,16 @@ public class BillServiceImpl implements BillService {
                         dueBillIds.add(bill.getId());
                     }
 
-                    String messageId = "";
-                    mapper.enable(SerializationFeature.INDENT_OUTPUT);
-                    Map<String, List<UUID>> objMap = new HashMap<>();
-                    objMap.put(recipientEmail, dueBillIds);
+//                    mapper.enable(SerializationFeature.INDENT_OUTPUT);
+//                    Map<String, List<UUID>> objMap = new HashMap<>();
+//                    objMap.put(recipientEmail, dueBillIds);
+
+                    DueBill dueBill = new DueBill();
+                    dueBill.setEmail(recipientEmail);
+                    dueBill.setDueBillIdList(dueBillIds);
 
                     try{
-                        awssqsClient.publishToQueue(mapper.writeValueAsString(objMap));
+                        awssqsClient.publishToQueue(mapper.writeValueAsString(dueBill));
                     } catch (JsonProcessingException jsonParsingException) {
                         logger.error("Unable to parse the request json", jsonParsingException);
                         throw new ServerException("Unable to parse the request json", jsonParsingException);
