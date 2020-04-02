@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -543,7 +544,8 @@ public class BillServiceImpl implements BillService {
                         throw new ServerException("Unable to parse the request json", jsonParsingException);
                     }
 
-                    SQSPolling myThread = new SQSPolling(awssqsClient, awssqsClient.getQueueUrl());
+
+                    SQSPolling myThread = new SQSPolling((AmazonSQS) awssqsClient, awssqsClient.getQueueUrl());
                     myThread.start();
 
                 }
