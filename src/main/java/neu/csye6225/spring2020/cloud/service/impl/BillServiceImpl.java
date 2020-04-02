@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import neu.csye6225.spring2020.cloud.aws.SNSClient;
 import com.timgroup.statsd.StatsDClient;
 import neu.csye6225.spring2020.cloud.aws.SQSClient;
+import neu.csye6225.spring2020.cloud.aws.SQSPolling;
 import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
@@ -500,7 +501,6 @@ public class BillServiceImpl implements BillService {
 
                 LocalDate startDate = LocalDate.now();
                 java.util.Date currentDate = java.sql.Date.valueOf(startDate);
-//                LocalDate date =  LocalDate.now().plusDays(Integer.parseInt(String.valueOf(x_days)));
                 LocalDate dueDate =  LocalDate.now().plusDays(x_days);
                 java.util.Date endDate = java.sql.Date.valueOf(dueDate);
 
@@ -531,6 +531,7 @@ public class BillServiceImpl implements BillService {
 //                    Map<String, List<UUID>> objMap = new HashMap<>();
 //                    objMap.put(recipientEmail, dueBillIds);
 
+                    // created POJO to pass key names in message body for the values
                     DueBill dueBill = new DueBill();
                     dueBill.setEmail(recipientEmail);
                     dueBill.setDueBillIdList(dueBillIds);
@@ -542,15 +543,8 @@ public class BillServiceImpl implements BillService {
                         throw new ServerException("Unable to parse the request json", jsonParsingException);
                     }
 
-//                    // Call the SNS Topic to trigger the lambda function
-//                    try{
-//                        messageId =  awssnsClient.publishToTopic(mapper.writeValueAsString(objMap));
-//                    } catch (JsonProcessingException jsonParsingException) {
-//                        logger.error("Unable to parse the request json", jsonParsingException);
-//                        throw new ServerException("Unable to parse the request json", jsonParsingException);
-//                    }
-//
-//                    logger.info("Message ID : " + messageId);
+                    SQSPolling myThread = new SQSPolling(awssqsClient, awssqsClient.getQueueUrl());
+                    myThread.start();
 
                 }
 
