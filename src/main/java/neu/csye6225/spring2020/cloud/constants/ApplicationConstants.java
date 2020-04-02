@@ -17,7 +17,7 @@ public class ApplicationConstants {
     public static final String ATTACH_FILE = "/v1/bill/{bill_id}/file";
     public static final String GET_ATTACHMENT = "/v1/bill/{bill_id}/file/{file_id}";
     public static final String DELETE_ATTACHMENT = "/v1/bill/{bill_id}/file/{file_id}";
-
+    public static final String GET_DUE_BILLS = "/v1/bills/due/{x_days}";
 
     // Username and Password Validation exceptions
     // =========================================================================================================================

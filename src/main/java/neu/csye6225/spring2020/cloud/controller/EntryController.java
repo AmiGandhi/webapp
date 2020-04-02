@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.rmi.ServerException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.UUID;
@@ -51,7 +52,7 @@ public class EntryController {
         return "***************Welcome to my cloud project!!***************";
     }
 
-    //user
+    //endpoints for user
     @RequestMapping( method = RequestMethod.POST, value=REGISTER, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<User> createUser(@Valid @RequestBody User userBody)
@@ -77,7 +78,7 @@ public class EntryController {
     }
 
 
-    //bill
+    //endpoints for bills
     @RequestMapping(method = RequestMethod.POST, value=CREATE_BILL, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Bill> createBill(@RequestHeader(AUTHORIZATION) String header,
@@ -121,7 +122,7 @@ public class EntryController {
         return new ResponseEntity(billService.deleteBill(header, id), HttpStatus.NO_CONTENT);
     }
 
-    //file attachment to bill
+    //endpoints for file attachment to bills
     @RequestMapping(value = ATTACH_FILE, method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public File attachFile(@RequestHeader(value = AUTHORIZATION) String auth,
@@ -149,5 +150,14 @@ public class EntryController {
                                  @PathVariable(value = "file_id") UUID file_id)
             throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, FileStorageException {
         billService.deleteAttachment(auth, bill_id, file_id);
+    }
+
+
+    //endpoint for triggering lambda function
+    @RequestMapping(value = GET_DUE_BILLS, method = RequestMethod.GET)
+    public ResponseEntity<List<Bill>> getDueBills(@RequestHeader(value = AUTHORIZATION) String authHeader,
+                                                  @PathVariable(value = "x_days") Integer x_days)
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException {
+        return new ResponseEntity<List<Bill>>(billService.getDueBills(authHeader, x_days), HttpStatus.OK);
     }
 }
