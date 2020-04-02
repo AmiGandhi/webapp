@@ -517,24 +517,30 @@ public class BillServiceImpl implements BillService {
 
                 if (profile.equalsIgnoreCase("aws")) {
 
-                    awssqsClient.publishToQueue("Hello");
+//                    awssqsClient.publishToQueue("Hello, this is my first message!");
+
                     // create long polling SQS Queue
                     // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-long-polling-for-queue.html
                     // or
                     // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues-getting-started-java.html
                     // awssqsClient.createSQSQueue();
 
-//                    String messageId = "";
-//                    mapper.enable(SerializationFeature.INDENT_OUTPUT);
-//                    Map<String, List<Bill>> objMap = new HashMap<>();
-//                    objMap.put(recipientEmail, dueBillList);
-//
-//                    try{
-//                        awssqsClient.publishToQueue(mapper.writeValueAsString(objMap));
-//                    } catch (JsonProcessingException jsonParsingException) {
-//                        logger.error("Unable to parse the request json", jsonParsingException);
-//                        throw new ServerException("Unable to parse the request json", jsonParsingException);
-//                    }
+                    List<UUID> dueBillIds = new ArrayList<>();
+                    for (Bill bill : dueBillList) {
+                        dueBillIds.add(bill.getId());
+                    }
+
+                    String messageId = "";
+                    mapper.enable(SerializationFeature.INDENT_OUTPUT);
+                    Map<String, List<UUID>> objMap = new HashMap<>();
+                    objMap.put(recipientEmail, dueBillIds);
+
+                    try{
+                        awssqsClient.publishToQueue(mapper.writeValueAsString(objMap));
+                    } catch (JsonProcessingException jsonParsingException) {
+                        logger.error("Unable to parse the request json", jsonParsingException);
+                        throw new ServerException("Unable to parse the request json", jsonParsingException);
+                    }
 
 //                    // Call the SNS Topic to trigger the lambda function
 //                    try{
@@ -547,8 +553,6 @@ public class BillServiceImpl implements BillService {
 //                    logger.info("Message ID : " + messageId);
 
                 }
-
-
 
                 long end = System.currentTimeMillis();
                 long time = (end - start);
