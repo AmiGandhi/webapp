@@ -1,5 +1,6 @@
 package neu.csye6225.spring2020.cloud.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
@@ -45,6 +46,6 @@ public interface BillService {
 
     // service to post bills to SNS topic and trigger lambda function
     public List<Bill> getDueBills(String authHeader, Integer x_days)
-            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException;
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException, JsonProcessingException;
 
 }

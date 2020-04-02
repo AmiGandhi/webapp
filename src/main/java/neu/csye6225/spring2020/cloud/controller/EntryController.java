@@ -2,6 +2,7 @@ package neu.csye6225.spring2020.cloud.controller;
 
 import javax.validation.Valid;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import neu.csye6225.spring2020.cloud.exception.FileStorageException;
 import neu.csye6225.spring2020.cloud.exception.ResourceNotFoundException;
 import neu.csye6225.spring2020.cloud.exception.UnAuthorizedLoginException;
@@ -156,7 +157,7 @@ public class EntryController {
     @RequestMapping(value = GET_DUE_BILLS, method = RequestMethod.GET)
     public ResponseEntity<List<Bill>> getDueBills(@RequestHeader(value = AUTHORIZATION) String authHeader,
                                                   @PathVariable(value = "x_days") Integer x_days)
-            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException {
+            throws ValidationException, UnAuthorizedLoginException, ResourceNotFoundException, ServerException, JsonProcessingException {
         return new ResponseEntity<List<Bill>>(billService.getDueBills(authHeader, x_days), HttpStatus.OK);
     }
 }
