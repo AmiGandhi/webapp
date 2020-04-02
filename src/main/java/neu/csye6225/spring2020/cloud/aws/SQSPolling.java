@@ -21,9 +21,6 @@ public class SQSPolling extends Thread {
     AmazonSQS sqs;
     String queueUrl;
 
-    @Value("${AWS_TOPIC_NAME}")
-    private String topicName;
-
     @Autowired
     EntryController entryController;
 
@@ -50,8 +47,11 @@ public class SQSPolling extends Thread {
                 logger.info("Inside for loop to publish each message to topic");
                 CreateTopicRequest topicReq = new CreateTopicRequest("csye6225-sns-topic");
                 AmazonSNSClient snsClient =  new AmazonSNSClient();
+                logger.info("connected to client and creating topic request");
                 CreateTopicResult topicRes = snsClient.createTopic(topicReq);
+                logger.info("Ready to create publish request");
                 PublishRequest publishReq =new PublishRequest(topicRes.getTopicArn(), message.getBody());
+                logger.info("Ready to publish");
                 PublishResult publishResult = snsClient.publish(publishReq);
                 System.out.println(publishResult.getMessageId());
                 logger.info(publishResult.getMessageId());
