@@ -49,20 +49,15 @@ Install Postman - Demo of all the API implementation on Postman
 3. All bills can be created under a single user account and the user account itself can be created via API call made outside of JMeter.
 
 ## User Stories
-All API request/response payloads should be in JSON.
-No UI should be implemented for the application.
-As a user, I expect all APIs call to return with proper HTTP status code.
-As a user, I expect the code quality of the application is maintained to highest standards using unit and/or integration tests.
-Your web application must only support Token-Based authentication and not Session Authentication.
-As a user, I must provide basic authentication token when making a API call to protected endpoint.
+1. All API request/response payloads should be in JSON.
+2. No UI should be implemented for the application.
+3. As a user, I expect all APIs call to return with proper HTTP status code.
+4. As a user, I expect the code quality of the application is maintained to highest standards using unit and/or integration tests.
+5. Your web application must only support Token-Based authentication and not Session Authentication.
+6. As a user, I must provide basic authentication token when making a API call to protected endpoint.
 
 #### Create a new user
-1. As a user, I want to create an account by providing following information.
-    Email Address
-    Password
-    First Name
-    Last Name
-    account_created field for the user should be set to current time when user creation is successful.
+1. As a user, I want to create an account by providing information - Email Address, Password, First Name, Last Name and account_created field for the user should be set to current time when user creation is successful.
 2. User should not be able to set values for account_created and account_updated. Any value provided for these fields must be ignored.
 3. Password field should never be returned in the response payload.
 4. As a user, I expect to use my email address as my username.
@@ -96,7 +91,7 @@ As a user, I must provide basic authentication token when making a API call to p
 6. Updating existing image requires deleting it first and then uploading a new image.
 
 #### Cloud oriented web app updates:
-1.As a user, I want to use the RDS instance on the cloud to store data when my application is running on EC2 instance.
+1. As a user, I want to use the RDS instance on the cloud to store data when my application is running on EC2 instance.
 2. As a user, I want to use S3 bucket to store user’s attachments instead of local disk.
 3. As a user, I want the S3 object metadata to be stored in the database.
 4. As a user, I want all application log data to be available in CloudWatch.
